@@ -1,158 +1,138 @@
-import { Play, LogIn, Globe, Award, Coins } from 'lucide-react';
+import { Play, LogIn, Globe, Award, Coins, ShieldCheck } from 'lucide-react';
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-between overflow-x-hidden bg-slate-900 text-slate-100 bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px]">
-      {/* Dynamic light scanline overlay */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.005)_1px,transparent_1px)] bg-[size:100%_6px] opacity-30 z-50"></div>
+    <div className="relative h-[100dvh] w-screen overflow-hidden bg-[#070913] text-slate-100 flex flex-col justify-between p-6 md:p-12 select-none font-sans">
       
-      {/* 1. Header Section */}
-      <header className="w-full max-w-5xl px-4 pt-6 z-40">
-        <div className="flex flex-col md:flex-row items-center justify-between bg-slate-950/80 rounded-2xl border border-slate-800 p-4 md:px-6 shadow-xl backdrop-blur-md">
-          {/* Top Info Indicator */}
-          <div className="flex items-center gap-3 mb-4 md:mb-0">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <div className="text-[10px] font-pixel tracking-widest text-emerald-400 uppercase">
-              1P READY // RETIRE RESILIENT
-            </div>
+      {/* Custom Global/Utility Keyframe Animations for Smooth Game Feel */}
+      <style>{`
+        @keyframes subtleGridScroll {
+          0% { background-position: 0 0; }
+          100% { background-position: 32px 32px; }
+        }
+        @keyframes radialPulse {
+          0%, 100% { opacity: 0.15; transform: scale(1); }
+          50% { opacity: 0.35; transform: scale(1.15); }
+        }
+        @keyframes goldenGlow {
+          0%, 100% { filter: drop-shadow(0 0 15px rgba(251,191,36,0.35)); }
+          50% { filter: drop-shadow(0 0 30px rgba(251,191,36,0.65)); }
+        }
+        .anim-grid {
+          background-image: 
+            linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px);
+          background-size: 32px 32px;
+          animation: subtleGridScroll 20s linear infinite;
+        }
+        .anim-radial-breathing {
+          animation: radialPulse 8s ease-in-out infinite;
+        }
+        .title-gold-glow {
+          animation: goldenGlow 4s ease-in-out infinite;
+        }
+      `}</style>
+
+      {/* 1. Dynamic Breathing Background Stack */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[#020308] via-[#090b16] to-[#0d122b]"></div>
+      
+      {/* Repeating retro grid with continuous translation */}
+      <div className="absolute inset-0 z-0 anim-grid opacity-60"></div>
+
+      {/* Radial ambient breathing mesh to give depth */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none z-0 anim-radial-breathing"></div>
+      <div className="absolute -top-1/4 -right-1/4 w-[400px] h-[400px] bg-rose-500/5 rounded-full blur-[100px] pointer-events-none z-0"></div>
+
+      {/* Retro CRT Scanlines & Screen vignette overlays */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.012)_1px,transparent_1px)] bg-[size:100%_4px] opacity-40 z-50"></div>
+      <div className="pointer-events-none absolute inset-0 bg-radial-gradient from-transparent via-slate-950/40 to-slate-950/90 z-20"></div>
+
+      {/* Floating UI Elements: Z-INDEX 40 to stay interactive */}
+      
+      {/* ==================== 2. SCREEN CORNER FLOATING INTERFACES ==================== */}
+
+      {/* TOP LEFT: Version Control & System Secure badge */}
+      <div className="absolute top-5 left-5 z-40 hidden sm:flex items-center gap-2.5 bg-slate-950/40 hover:bg-slate-950/60 border border-slate-800/80 backdrop-blur-md rounded-full px-3.5 py-1.5 transition-all">
+        <span className="flex h-2 w-2 relative">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span className="text-[10px] font-mono tracking-widest text-slate-400 font-bold uppercase">
+          VER 1.2.0 //
+        </span>
+        <span className="text-[10px] font-mono tracking-widest text-emerald-400 flex items-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5" /> SECURE
+        </span>
+      </div>
+
+      {/* TOP RIGHT: Language and Currency switch pills */}
+      <div className="absolute top-5 right-5 z-40 flex items-center gap-3">
+        {/* Compact, ultra-sleek pill toggles with interactive mouse hover styling */}
+        <div className="flex items-center gap-2.5 bg-slate-950/40 backdrop-blur-md border border-slate-800/80 rounded-full p-1 shadow-lg">
+          {/* LAN option selector */}
+          <div className="flex items-center text-[10px] font-semibold tracking-wider font-mono px-2 text-slate-400">
+            <Globe className="w-3.5 h-3.5 mr-1" /> EN
           </div>
-
-          {/* Pill-shaped modern toggles for Language & Currency */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            {/* Language toggle selector */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-slate-400" /> LANG
-              </span>
-              <div className="inline-flex rounded-full p-1 bg-slate-900 border border-slate-800/80">
-                <button className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase rounded-full px-3 py-1 transition-all">
-                  EN
-                </button>
-                <button className="text-slate-500 hover:text-slate-300 text-[10px] font-bold uppercase rounded-full px-3 py-1 transition-all">
-                  ID
-                </button>
-              </div>
-            </div>
-
-            {/* Currency toggle selector */}
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-400 uppercase flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5 text-slate-400" /> CURR
-              </span>
-              <div className="inline-flex rounded-full p-1 bg-slate-900 border border-slate-800/80">
-                <button className="bg-amber-400/10 text-amber-400 border border-amber-400/30 text-[10px] font-bold uppercase rounded-full px-3 py-1 transition-all">
-                  $
-                </button>
-                <button className="text-slate-500 hover:text-slate-300 text-[10px] font-bold uppercase rounded-full px-3 py-1 transition-all">
-                  RP
-                </button>
-              </div>
-            </div>
+          <div className="h-4 w-[1px] bg-slate-800/80"></div>
+          {/* CURR representation */}
+          <div className="flex items-center text-[10px] font-semibold tracking-wider font-mono pr-2 text-amber-400">
+            <Coins className="w-3.5 h-3.5 mr-1" /> USD
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Container */}
-      <main className="w-full max-w-4xl px-4 flex-1 flex flex-col items-center justify-center py-10 z-40">
+      {/* BOTTOM LEFT: Glassmorphic Google login widget */}
+      <div className="absolute bottom-5 left-5 z-40">
+        <button className="group relative flex items-center gap-2.5 bg-slate-950/40 hover:bg-slate-900/60 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 backdrop-blur-md rounded-full px-4 py-2 transition-all duration-150 cursor-pointer text-xs font-semibold tracking-wide">
+          <LogIn className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+          <span className="font-mono">GOOGLE_SIGN_IN</span>
+        </button>
+      </div>
+
+      {/* BOTTOM RIGHT: High Resilience Ledger entry button */}
+      <div className="absolute bottom-5 right-5 z-40">
+        <button className="group relative flex items-center gap-2.5 bg-slate-950/40 hover:bg-slate-900/60 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 backdrop-blur-md rounded-full px-4 py-2 transition-all duration-150 cursor-pointer text-xs font-semibold tracking-wide">
+          <Award className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+          <span className="font-mono">LEDGER_DATABASE</span>
+        </button>
+      </div>
+
+
+      {/* ==================== 3. CENTER STAGE (THE ABSOLUTE HERO) ==================== */}
+      <div className="flex-1 flex flex-col items-center justify-center z-30 max-w-xl mx-auto text-center px-4 self-center">
         
-        {/* 2. Hero Section */}
-        <section className="text-center mb-10 select-none">
-          <div className="relative inline-block mb-4">
-            {/* Soft backdrop glow to center title */}
-            <div className="absolute inset-x-0 -bottom-2 h-16 bg-gradient-to-t from-emerald-500/10 to-transparent blur-xl"></div>
-            
-            <h1 className="relative font-pixel text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-amber-400 uppercase select-none drop-shadow-[0_4px_0_rgba(180,83,9,1)]">
-              DASH TO 30
-            </h1>
-          </div>
-
-          <p className="mt-6 text-xs text-slate-400 max-w-xl mx-auto leading-relaxed border-y border-slate-800/80 py-4 uppercase tracking-widest font-semibold">
-            THE FINANCIAL SURVIVAL CHALLENGE — AN 8-BIT RUNNER DEMONSTRATING REAL-WORLD{" "}
-            <span className="text-emerald-400 font-bold">FINANCIAL DECISION MAKING</span>. Can you retire resiliently?
-          </p>
-        </section>
-
-        {/* 3. Action Section */}
-        <section className="w-full max-w-2xl mx-auto mb-12 flex flex-col sm:flex-row gap-6 justify-center">
-          {/* Play as Guest button */}
-          <button className="group relative flex-grow bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs md:text-sm py-4 pb-[18px] px-8 border-2 border-slate-950 border-b-6 border-b-emerald-700 uppercase cursor-pointer rounded-xl transition-all duration-75 active:border-b-2 active:translate-y-[4px] flex items-center justify-center gap-3 font-pixel">
-            <Play className="w-4 h-4 fill-slate-950 stroke-slate-950 animate-bounce" />
-            <span>PLAY AS GUEST</span>
-          </button>
-
-          {/* Login with Google button */}
-          <button className="group relative flex-grow bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs md:text-sm py-4 pb-[18px] px-8 border-2 border-slate-950 border-b-6 border-b-amber-600 uppercase cursor-pointer rounded-xl transition-all duration-75 active:border-b-2 active:translate-y-[4px] flex items-center justify-center gap-3 font-pixel">
-            <LogIn className="w-4 h-4" />
-            <span>GOOGLE LOGIN</span>
-          </button>
-        </section>
-
-        {/* 4. Leaderboard Section */}
-        <section className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-md">
-          <div className="flex items-center justify-center gap-3 mb-6 border-b border-slate-800 pb-5">
-            <Award className="w-5 h-5 text-amber-400" />
-            <h2 className="font-pixel text-2xs sm:text-xs font-bold text-center text-amber-400 uppercase tracking-widest">
-              FINANCIAL RESILIENCE LEDGER
-            </h2>
-            <Award className="w-5 h-5 text-amber-400" />
-          </div>
-
-          <div className="bg-transparent">
-            {/* Headers Row */}
-            <div className="grid grid-cols-12 gap-3 text-slate-400 mb-4 px-4 text-xs font-bold uppercase tracking-wider font-mono">
-              <div className="col-span-2">RANK</div>
-              <div className="col-span-6">RESILIENT HERO</div>
-              <div className="col-span-4 text-right">NET WORTH score</div>
-            </div>
-
-            {/* List items structured beautifully container */}
-            <div className="space-y-3">
-              {/* Row 1 Highlights */}
-              <div className="grid grid-cols-12 gap-3 text-sm p-4 bg-slate-900 hover:bg-slate-800/80 transition-colors border border-slate-800/50 rounded-xl font-mono items-center">
-                <div className="col-span-2 text-emerald-400 font-bold text-base font-pixel">01</div>
-                <div className="col-span-6 text-slate-100 font-medium uppercase tracking-wider">WAITING_FOR_DASHERS...</div>
-                <div className="col-span-4 text-right text-amber-400 font-bold text-base">$0.00</div>
-              </div>
-
-              {/* Row 2 */}
-              <div className="grid grid-cols-12 gap-3 text-sm p-4 bg-slate-900/50 hover:bg-slate-800/50 transition-colors border border-slate-900 rounded-xl font-mono items-center">
-                <div className="col-span-2 text-slate-400 font-bold text-base font-pixel">02</div>
-                <div className="col-span-6 text-slate-400 font-medium uppercase tracking-wider">TRIAL_PENDING</div>
-                <div className="col-span-4 text-right text-amber-400/80 font-bold text-base">$0.00</div>
-              </div>
-
-              {/* Row 3 */}
-              <div className="grid grid-cols-12 gap-3 text-sm p-4 bg-slate-900/50 hover:bg-slate-800/50 transition-colors border border-slate-900 rounded-xl font-mono items-center">
-                <div className="col-span-2 text-slate-400 font-bold text-base font-pixel">03</div>
-                <div className="col-span-6 text-slate-400 font-medium uppercase tracking-wider">TRIAL_PENDING</div>
-                <div className="col-span-4 text-right text-amber-400/80 font-bold text-base">$0.00</div>
-              </div>
-            </div>
-
-            {/* Custom Empty Notification Card with clean white-hot-neon accents */}
-            <div className="mt-8 border border-dashed border-slate-800 bg-slate-900/40 rounded-xl p-4 text-center">
-              <p className="text-[11px] text-slate-400 uppercase leading-relaxed tracking-wider font-semibold">
-                NO TRANSACTIONS COMMITTED BY ACTIVE HEROES YET.
-                <br />
-                <span className="text-amber-400 font-pixel text-[10px] inline-block mt-2 tracking-wide animate-pulse">★ SURVIVE TO AGE 30, MANAGE INTEREST & CLAIM HIGHEST WORTH ★</span>
-              </p>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Game Cabinet Footer Decor with high density design styles */}
-      <footer className="w-full max-w-5xl px-4 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-500 pt-6 pb-8 border-t border-slate-800/60 bg-transparent z-40 mt-12 uppercase tracking-wider gap-4 sm:gap-0 font-medium font-mono">
-        <div>VER 1.1.0-STABLE</div>
-        <div className="text-emerald-500 font-semibold flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-full px-3 py-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          SERVER SECURE // PORT 3000
+        {/* Compact, aesthetic category tag */}
+        <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3.5 py-1 text-[9px] font-pixel tracking-widest text-emerald-400 mb-6 uppercase">
+          <span>★</span> STAGE 01 PRE-GAME LOBBY <span>★</span>
         </div>
-        <div>COPYRIGHT © 2026 DASH_TO_30_STUDIOS</div>
-      </footer>
+
+        {/* Title Container with premium pixel font & drop shadow */}
+        <div className="relative mb-5 title-gold-glow">
+          <h1 className="font-pixel text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-amber-400 uppercase drop-shadow-[0_4px_0_rgba(180,83,9,1)]">
+            DASH TO 30
+          </h1>
+        </div>
+
+        {/* High-fidelity modern tagline */}
+        <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-medium uppercase tracking-widest border-y border-slate-800/50 py-4 w-full mb-10">
+          The Financial Survival Challenge. Let&apos;s make life choices, earn compound interest, & retire resiliently.
+        </p>
+
+        {/* MASSIVE, JUICY, RE-DESIGNED "PLAY NOW" ACTION TRIGGER */}
+        <div className="w-full max-w-sm">
+          <button className="group relative w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm sm:text-base py-5 pb-[22px] px-8 border-2 border-slate-950 border-b-8 border-b-emerald-700 active:border-b-2 active:translate-y-[6px] transition-all rounded-2xl cursor-pointer flex items-center justify-center gap-3.5 font-pixel shadow-[0_12px_24px_-8px_rgba(16,185,129,0.4)] hover:shadow-[0_16px_32px_-6px_rgba(16,185,129,0.5)]">
+            <Play className="w-5 h-5 fill-slate-950 stroke-slate-950 group-hover:scale-110 transition-transform duration-100 ease-out" />
+            <span className="tracking-wider">START MISSION</span>
+          </button>
+        </div>
+
+        {/* Quick, crisp tips below the play button */}
+        <p className="text-[10px] text-slate-500 font-medium font-mono mt-5 uppercase tracking-wide">
+          INPUT COINS NOT REQUIRED // MOUSE / KEYBOARD / TOUCH READY
+        </p>
+      </div>
+
     </div>
   );
 }
+
