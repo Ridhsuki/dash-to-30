@@ -1,0 +1,6 @@
+{
+  "name": "Dash to 30",
+  "description": "An 8-bit retro side-scrolling endless-runner game about financial literacy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
