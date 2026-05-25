@@ -9,76 +9,85 @@ import {
   Calendar, 
   Receipt,
   User,
-  ExternalLink
+  Coffee,
+  PiggyBank,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import ParallaxGameBackground from '@/components/landing/ParallaxGameBackground';
 
 export default function HomePage() {
   return (
-    <div className="relative h-[100dvh] w-screen overflow-hidden bg-[#0B1020] text-[#FFF7E6] flex flex-col justify-between p-4 sm:p-6 md:p-8 select-none font-sans">
+    <div className="relative h-[100dvh] w-screen overflow-hidden bg-[#DFF4FF] text-[#4A3A2A] flex flex-col justify-between p-4 sm:p-6 md:p-8 select-none font-sans">
       
-      {/* 1. Custom CSS Keyframes for tactile indie-game menu rendering */}
+      {/* 1. Custom CSS animations for a cozy, tactile, toy-like indie game UI feel */}
       <style>{`
-        @keyframes menuBounce {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
+        @keyframes menuDrift {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-8px) rotate(0.5deg); }
         }
         @keyframes shine {
           0% { left: -100%; }
           100% { left: 100%; }
         }
-        .anim-menu-idle {
-          animation: menuBounce 6s ease-in-out infinite;
-        }
-        .text-neon-glow {
-          text-shadow: 0 0 10px rgba(255, 209, 102, 0.4);
+        .anim-menu-box {
+          animation: menuDrift 6s ease-in-out infinite;
         }
         .btn-shimmer::after {
           content: '';
           position: absolute;
           top: 0; left: -100%; width: 100%; height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
           transition: all 0.6s;
         }
         .btn-shimmer:hover::after {
-          animation: shine 1.2s infinite;
+          animation: shine 1.3s infinite;
+        }
+        @keyframes indicatorWave {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+        .pulse-indicator {
+          animation: indicatorWave 2s infinite ease-in-out;
         }
       `}</style>
 
-      {/* 2. Parallax Game Layer Background Component (Renders client hooks & particles) */}
+      {/* 2. Soft, Branded Parallax Background with Falling Financial Snow Dust & silhouettes */}
       <ParallaxGameBackground />
 
-      {/* CRT Grid screen scanner filter */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.005)_1px,transparent_1px)] bg-[size:100%_4px] opacity-40 z-20"></div>
-      <div className="pointer-events-none absolute inset-0 bg-radial-gradient from-transparent via-[#0B1020]/20 to-[#0B1020]/80 z-25"></div>
+      {/* Screen scanlines & vignette edges for playful retro arcade focus */}
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:100%_4px] opacity-30 z-20"></div>
+      <div className="pointer-events-none absolute inset-0 bg-radial-gradient from-transparent via-[#4A3A2A]/5 to-[#4A3A2A]/20 z-25"></div>
 
       {/* ========================================== */}
       {/* ================ HEADER NAV ============= */}
       {/* ========================================== */}
       <header className="relative w-full max-w-5xl mx-auto flex items-center justify-between z-30 transition-all">
-        {/* Top-Left: Mini Dashboard Coin Badge (Instead of generic profile) */}
-        <div className="flex items-center gap-2.5 bg-[#141B3D]/80 border-2 border-slate-800 backdrop-blur-md rounded-full px-3.5 py-1.5 shadow-xl">
-          <div className="w-5 h-5 rounded-full bg-[#FFD166] border border-[#FF9F1C] flex items-center justify-center font-bold text-[#0B1020] text-[10px] sm:text-xs">
+        
+        {/* Top-Left: Playful Dash-to-30 Piggy Coin Badge */}
+        <div className="flex items-center gap-2 bg-[#FFF6E8] border-2 border-[#8B5E3C] rounded-full px-3 py-1.5 shadow-[0_4px_0_#8B5E3C]">
+          <div className="w-5 h-5 rounded-full bg-[#FFC857] border border-[#FF9F1C] flex items-center justify-center font-bold text-[#4A3A2A] text-xs shadow-sm">
             $
           </div>
-          <span className="text-[9px] font-pixel tracking-widest text-[#FFD166] font-bold uppercase">
-            UNIT PRE-GAME
+          <span className="text-[10px] font-pixel tracking-widest text-[#4A3A2A] font-bold uppercase">
+            PAYDAY LOBBY
           </span>
         </div>
 
-        {/* Top-Right: Settings, Language Pill and Status */}
+        {/* Top-Right: Setting pill buttons with minimal text */}
         <div className="flex items-center gap-2">
-          {/* Subtle info pill */}
-          <div className="hidden sm:inline-flex items-center gap-1.5 bg-[#2EC27E]/10 border border-[#2EC27E]/20 rounded-full px-3 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#2EC27E] animate-pulse"></span>
-            <span className="text-[9px] font-mono font-semibold text-[#2EC27E] tracking-wider uppercase">
-              Day 1: Fresh Payday
+          {/* Calendar status pill in Mint Green for Needs/Positive aspect */}
+          <div className="hidden sm:inline-flex items-center gap-1.5 bg-[#6FD08C]/15 border-2 border-[#6FD08C]/55 rounded-full px-3.5 py-1">
+            <span className="w-2 h-2 rounded-full bg-[#6FD08C] pulse-indicator"></span>
+            <span className="text-[9px] font-mono font-bold text-[#4A3A2A] tracking-wider uppercase">
+              Day 1: Fresh Paycheck
             </span>
           </div>
 
+          {/* Quiet Settings trigger */}
           <button 
             type="button"
-            className="w-8 h-8 rounded-full bg-[#141B3D]/80 hover:bg-[#141B3D] border-2 border-slate-800 flex items-center justify-center text-slate-300 hover:text-white transition-all shadow-md active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFD166]"
+            className="w-8 h-8 rounded-full bg-[#FFF6E8] hover:bg-white border-2 border-[#8B5E3C] flex items-center justify-center text-[#4A3A2A] transition-all shadow-[0_3px_0_#8B5E3C] active:translate-y-[2px] active:shadow-[0_1px_0_#8B5E3C] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
             aria-label="Settings"
           >
             <Settings className="w-4 h-4" />
@@ -86,126 +95,143 @@ export default function HomePage() {
         </div>
       </header>
 
+
       {/* ========================================== */}
-      {/* ============ MAIN GAME CENTER MENU ======= */}
+      {/* ============ CENTER MAIN CONSOLE MENU ==== */}
       {/* ========================================== */}
-      <main className="relative flex-1 flex flex-col items-center justify-center z-30 w-full max-w-sm sm:max-w-md mx-auto py-4 select-none">
+      <main className="relative flex-1 flex flex-col items-center justify-center z-30 w-full max-w-sm sm:max-w-md mx-auto py-2 select-none">
         
-        {/* Center menu panel styled as a compact gaming terminal console */}
-        <div className="relative w-full bg-[#141B3D]/95 border-4 border-slate-800 rounded-3xl p-5 sm:p-7 shadow-[0_24px_50px_-12px_rgba(11,16,32,0.8)] md:shadow-[0_24px_40px_rgba(255,209,102,0.04)] anim-menu-idle">
+        {/* The Game Start Menu Card - styled in Warm Cream #FFF6E8 */}
+        <div className="relative w-full bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_16px_32px_rgba(139,94,60,0.18)] anim-menu-box">
           
-          {/* Decorative receipt paper tag sticking out the top */}
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-[70%] h-4 bg-[#FFF1C7] border-t-2 border-x-2 border-slate-800 rounded-t-md flex items-center justify-between px-2 text-[7px] text-slate-800 font-mono tracking-widest uppercase">
-            <span>RECEIPT #030</span>
-            <span>BUDGET: SAFE</span>
+          {/* Receipt strip head decoration popping out from original design parameters */}
+          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-[75%] h-5 bg-[#FFF1C7] border-2 border-[#8B5E3C] border-b-0 rounded-t-lg flex items-center justify-between px-3 text-[8px] text-[#4A3A2A] font-mono tracking-widest uppercase font-bold">
+            <span>START UNIT</span>
+            <span className="text-[#6FD08C]">✓ READY</span>
           </div>
 
-          {/* Interactive Title & Brand Area */}
+          {/* Interactive Title & Main Tagline */}
           <div className="text-center mb-6 pt-1">
-            <h1 className="font-pixel text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#FFD166] uppercase drop-shadow-[0_4px_0_#FF9F1C] select-none text-neon-glow">
+            <h1 className="font-pixel text-4xl sm:text-5xl font-bold tracking-tight text-[#FF9F1C] uppercase drop-shadow-[0_4px_0_#8B5E3C] select-none text-shadow">
               DASH TO 30
             </h1>
-            <p className="text-[10px] sm:text-xs text-[#FFF7E6]/70 uppercase tracking-widest font-mono font-bold mt-2">
-              Survive until payday.
+            <p className="text-[10px] sm:text-xs text-[#4A3A2A]/70 uppercase tracking-widest font-mono font-bold mt-2 flex items-center justify-center gap-1">
+              <span>★</span> Survive your spending until payday. <span>★</span>
             </p>
           </div>
 
-          {/* ================= BUTTON STACK ================= */}
+          {/* ================= INTEGRATED GAME ACTION CONTROLS ================= */}
           <div className="space-y-3 sm:space-y-3.5">
-            {/* Primary Action: PLAY */}
+            
+            {/* Primary Action Button: PLAY (Sunny Yellow #FFC857 & shadow alignment) */}
             <button 
               type="button"
-              className="group relative w-full bg-[#FFD166] hover:bg-[#FF9F1C] text-[#0B1020] font-black py-4 px-6 uppercase rounded-2xl transition-all duration-75 border-2 border-[#FFF7E6] border-b-6 border-b-[#FF9F1C] active:border-b-2 active:translate-y-[4px] cursor-pointer flex items-center justify-center gap-3 font-pixel select-none shadow-[0_8px_20px_rgba(255,209,102,0.2)] hover:shadow-[0_12px_24px_rgba(255,159,28,0.35)] btn-shimmer overflow-hidden focus-visible:outline-4 focus-visible:outline-[#FFD166]"
+              className="group relative w-full bg-[#FFC857] hover:bg-[#FF9F1C] text-[#4A3A2A] font-black py-4.5 px-6 uppercase rounded-2xl transition-all duration-75 border-2 border-[#FFF6E8] border-b-6 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[4px] cursor-pointer flex items-center justify-center gap-3 font-pixel select-none shadow-[0_8px_16px_rgba(139,94,60,0.12)] btn-shimmer overflow-hidden focus-visible:outline-4 focus-visible:outline-[#FF9F1C]"
             >
-              <Play className="w-4 h-4 fill-[#0B1020] stroke-[#0B1020]" />
+              <Play className="w-4 h-4 fill-[#4A3A2A] stroke-[#4A3A2A]" />
               <span className="text-xs sm:text-sm tracking-widest">PLAY GAME</span>
             </button>
 
-            {/* Minor stacked actions */}
+            {/* Minor grid-aligned options */}
             <div className="grid grid-cols-2 gap-3">
               <button 
                 type="button"
-                className="group relative bg-[#141B3D] hover:bg-[#141B3D]/70 text-[#FFF7E6]/90 hover:text-white border-2 border-slate-800 border-b-4 border-b-slate-900/90 active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFD166]"
+                className="group relative bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
               >
-                <HelpCircle className="w-3.5 h-3.5 text-[#2EC27E]" />
+                <HelpCircle className="w-3.5 h-3.5 text-[#6FD08C]" />
                 <span>HOW TO PLAY</span>
               </button>
 
               <button 
                 type="button"
-                className="group relative bg-[#141B3D] hover:bg-[#141B3D]/70 text-[#FFF7E6]/90 hover:text-white border-2 border-slate-800 border-b-4 border-b-slate-900/90 active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFD166]"
+                className="group relative bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
               >
-                <User className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                <User className="w-3.5 h-3.5 text-[#9B8CFF]" />
                 <span>CHOOSE ROLE</span>
               </button>
             </div>
 
+            {/* Leaderboard stats trigger */}
             <button 
               type="button"
-              className="group relative w-full bg-[#141B3D] hover:bg-[#141B3D]/70 text-[#FFF7E6]/90 hover:text-white border-2 border-slate-800 border-b-4 border-b-slate-900/90 active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-2.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFD166]"
+              className="group relative w-full bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3.5 rounded-xl transition-all flex items-center justify-center gap-2.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
             >
-              <Award className="w-4 h-4 text-[#FFD166]" />
+              <Award className="w-4 h-4 text-[#FF9F1C]" />
               <span>LEADERBOARD STATS</span>
             </button>
 
-            <div className="h-[1px] bg-slate-800/80 my-2"></div>
+            {/* Clean line separation */}
+            <div className="h-[2px] bg-[#8B5E3C]/20 my-2"></div>
 
+            {/* Google sign-in action button */}
             <button 
               type="button"
-              className="group w-full bg-slate-950/40 hover:bg-slate-950/80 text-xs text-slate-400 hover:text-[#FFF7E6] py-3 rounded-xl border border-slate-800 transition-colors uppercase font-mono tracking-wider flex items-center justify-center gap-2 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FFD166]"
+              className="group w-full bg-[#FFF1C7] hover:bg-white text-[10px] sm:text-xs text-[#4A3A2A] font-bold py-3.5 rounded-xl border-2 border-[#8B5E3C] shadow-[0_3px_0_#8B5E3C] active:translate-y-[2px] active:shadow-[0_1px_0_#8B5E3C] transition-all uppercase font-mono tracking-wider flex items-center justify-center gap-2.5 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
             >
-              <LogIn className="w-3.5 h-3.5 text-[#EF476F]" />
+              <LogIn className="w-3.5 h-3.5 text-[#FF7AA2]" />
               <span>LOGIN TO SAVE SCORE</span>
             </button>
           </div>
 
-          {/* Decorative mini status ribbon inside center panel */}
-          <div className="mt-5 border border-dashed border-slate-850 bg-slate-950/40 rounded-xl p-2.5 text-center flex items-center justify-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#EF476F] inline-block"></span>
-            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-widest select-none">
-              Impulse Temptation Status // HIGH ACCELERATION
-            </span>
+          {/* Small compact game tracking mini timeline calendar inside the console */}
+          <div className="mt-5 bg-[#CDEFFF]/40 border-2 border-[#8B5E3C]/45 rounded-xl p-3 text-left">
+            <div className="flex items-center justify-between text-[8px] font-mono uppercase text-[#4A3A2A] mb-1.5 font-bold tracking-wider">
+              <span className="flex items-center gap-1 text-[#FF9F1C]">📅 SURVIVAL TARGET</span>
+              <span>Day 1 → Day 30</span>
+            </div>
+            {/* Shimmering indicator line */}
+            <div className="relative w-full h-2 bg-white/95 border border-[#8B5E3C]/30 rounded-full overflow-hidden">
+              <div className="absolute top-0 left-0 bottom-0 w-3/4 bg-gradient-to-r from-[#FFC857] to-[#FF9F1C] rounded-full"></div>
+              {/* Mark dangerous days in Coral Red */}
+              <div className="absolute right-0 top-0 bottom-0 w-1 bg-[#FF6B6B]" title="Late month chaos threshold"></div>
+            </div>
+            <div className="flex justify-between items-center text-[7px] font-mono text-slate-500 mt-1 uppercase font-semibold">
+              <span className="text-[#6FD08C]">Day 01 Payday</span>
+              <span className="text-[#FF6B6B]">Day 30 Crisis</span>
+            </div>
           </div>
 
         </div>
 
-        {/* Small floating "Receipt Strip" decor element below console */}
-        <div className="w-[85%] mt-4 bg-[#FFF1C7] text-slate-900 border-2 border-slate-800 shadow-md p-3.5 font-mono rounded-xl text-[9px] flex flex-col gap-1 select-none">
-          <div className="flex justify-between font-bold border-b border-dashed border-slate-500/50 pb-1 uppercase tracking-wider">
-            <span>TEMPTATION ACCOUNTING</span>
+        {/* Humorous financial ledger mini receipt paper block (#FFF1C7 as asked) */}
+        <div className="w-[88%] mt-4 bg-[#FFF1C7] text-[#4A3A2A] border-2 border-[#8B5E3C] shadow-[0_6px_0_rgba(139,94,60,0.15)] p-3.5 font-mono rounded-xl text-[9px] flex flex-col gap-1 select-none">
+          <div className="flex justify-between font-bold border-b-2 border-dashed border-[#8B5E3C]/30 pb-1.5 mb-1.5 uppercase tracking-wider">
+            <span className="flex items-center gap-1">🧾 DAILY ACCOUNTING</span>
             <span>DAY 20</span>
           </div>
-          <div className="space-y-0.5 text-slate-850">
+          <div className="space-y-0.5 text-[#4A3A2A]/85">
             <div className="flex justify-between">
-              <span>- Impulse Coffee</span>
-              <span className="text-[#EF476F] font-bold">-$6.50</span>
+              <span>- Coffee Temptation</span>
+              <span className="text-[#FF7AA2] font-bold">-$6.50</span>
             </div>
             <div className="flex justify-between">
-              <span>- Paylater Trap</span>
-              <span className="text-[#8B5CF6] font-bold">-$24.00</span>
+              <span>- Paylater Traps</span>
+              <span className="text-[#9B8CFF] font-bold">-$24.00</span>
             </div>
             <div className="flex justify-between">
-              <span>- Secure Net Interest</span>
-              <span className="text-[#2EC27E] font-bold">+$15.00</span>
+              <span>- Healthy Organic Needs</span>
+              <span className="text-[#6FD08C] font-bold">✓ -$10.00</span>
             </div>
           </div>
-          <div className="border-t border-dashed border-slate-500/50 mt-1 pt-1 flex justify-between font-bold text-slate-950 uppercase text-[8px]">
-            <span>AI Roast Severity</span>
-            <span className="text-[#E63946]">🚨 ACTIVE COFFEE ADDICT</span>
+          <div className="border-t-2 border-dashed border-[#8B5E3C]/30 mt-1.5 pt-1.5 flex justify-between font-bold text-[#4A3A2A] uppercase text-[8px]">
+            <span>AI ROAST RISK LEVEL:</span>
+            <span className="text-[#FF6B6B] animate-pulse">💸 COFFEE ADDICT INSOLVENCY</span>
           </div>
         </div>
 
       </main>
 
+
       {/* ========================================== */}
       {/* ================ LOBBY FOOTER ============ */}
       {/* ========================================== */}
-      <footer className="relative w-full max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-500 font-mono pt-4 border-t border-slate-900/60 z-30 uppercase tracking-wider gap-3 sm:gap-0 font-medium">
+      <footer className="relative w-full max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center text-[9px] text-[#4A3A2A]/55 font-mono pt-4 border-t-2 border-[#8B5E3C]/15 z-30 uppercase tracking-wider gap-3 sm:gap-0 font-bold">
         <div>v1.2.0-STABLE</div>
-        <div className="text-emerald-500 bg-slate-950/80 border border-slate-800 rounded-full px-3 py-1 font-semibold">
-          UNIT STATUS: STABLE INTERACTION
+        <div className="text-[#6FD08C] bg-white border-2 border-[#8B5E3C] rounded-full px-3 py-0.5 shadow-sm font-bold flex items-center gap-1">
+          <span className="w-1.5 h-1.5 bg-[#6FD08C] rounded-full pulse-indicator"></span>
+          CONSOLE INTERACTION SAFE
         </div>
-        <div>ARCADE CONSOLE // PORT 3000</div>
+        <div>ARCADE CABINET // PORT 3000</div>
       </footer>
 
     </div>
