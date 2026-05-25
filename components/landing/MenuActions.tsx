@@ -19,6 +19,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import LeaderboardModal from './LeaderboardModal';
+import RoleSetupModal from './RoleSetupModal';
 
 export default function MenuActions() {
   const [user, setUser] = useState<User | null>(null);
@@ -27,6 +28,7 @@ export default function MenuActions() {
   const [authErrorDetails, setAuthErrorDetails] = useState<{ code?: string; message?: string; hostname?: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
   useEffect(() => {
     // Listen to current authentication state changes
@@ -191,6 +193,7 @@ export default function MenuActions() {
         </button>
 
         <button 
+          onClick={() => setIsRoleModalOpen(true)}
           type="button"
           className="group relative bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
         >
@@ -273,6 +276,13 @@ export default function MenuActions() {
       <LeaderboardModal 
         isOpen={isLeaderboardOpen} 
         onClose={() => setIsLeaderboardOpen(false)} 
+      />
+
+      {/* Role Setup Confession Modal */}
+      <RoleSetupModal
+        isOpen={isRoleModalOpen}
+        onClose={() => setIsRoleModalOpen(false)}
+        onSubmit={(val) => console.log('Confession:', val)}
       />
     </div>
   );
