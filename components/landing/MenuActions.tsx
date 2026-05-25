@@ -20,7 +20,6 @@ import {
 import { auth } from '@/lib/firebase';
 import LeaderboardModal from './LeaderboardModal';
 import RoleSetupModal from './RoleSetupModal';
-import { generateGameConfig } from '@/app/actions/gemini';
 
 export default function MenuActions() {
   const [user, setUser] = useState<User | null>(null);
@@ -37,7 +36,16 @@ export default function MenuActions() {
   const handleRoleSubmit = async (confession: string) => {
     setIsGenerating(true);
     try {
-      const config = await generateGameConfig(confession);
+      const res = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confession })
+      });
+      
+      if (!res.ok) throw new Error('API Request Failed');
+      
+      const config = await res.json();
+      
       if (typeof window !== 'undefined') {
         localStorage.setItem('dashTo30_aiConfig', JSON.stringify(config));
       }
@@ -265,7 +273,7 @@ export default function MenuActions() {
           {loading ? (
             <div className="w-full bg-[#FFF1C7]/50 border-2 border-[#8B5E3C] border-dashed text-[10px] text-[#4A3A2A]/40 font-mono py-3.5 rounded-xl text-center uppercase tracking-wider">
               LOADING STATUS...
-          </div>
+            </div>
           ) : user ? (
             /* Logged-In State Card */
             <div className="w-full flex items-center justify-between bg-[#FFF1C7] border-2 border-[#8B5E3C] rounded-xl px-3 py-2.5 shadow-[0_3px_0_#8B5E3C] transition-all">

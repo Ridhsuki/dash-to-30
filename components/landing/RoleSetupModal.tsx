@@ -69,7 +69,7 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (confession.trim() && !isGenerating) {
+    if (confession.trim()) {
       onSubmit(confession);
     }
   };
@@ -94,7 +94,7 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
       {/* Modal Container in Cozy Indie Game Style with Easter-Egg Bouncy curve */}
       <div 
         id="rolesetup-modal-box"
-        className="relative w-full max-w-md sm:max-w-lg bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_12px_0_#8B5E3C] transform max-h-[92vh] flex flex-col uppercase font-sans"
+        className="relative w-full max-w-md sm:max-w-lg bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_12px_0_#8B5E3C] transform max-h-[92vh] flex flex-col uppercase font-sans animate-in"
         style={{ animation: 'modalBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
       >
         {/* Receipt-style Top Decoration */}
@@ -107,8 +107,7 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
         <button
           onClick={onClose}
           type="button"
-          disabled={isGenerating}
-          className="absolute -top-3.5 -right-2 w-8 h-8 rounded-xl bg-[#FF6B6B] hover:bg-[#FF7AA2] border-2 border-[#8B5E3C] text-[#FFF6E8] flex items-center justify-center font-bold transition-transform duration-300 hover:rotate-90 hover:scale-105 active:scale-95 cursor-pointer shadow-[0_3px_0_#8B5E3C] active:translate-y-[2px] active:shadow-[0_1px_0_#8B5E3C] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute -top-3.5 -right-2 w-8 h-8 rounded-xl bg-[#FF6B6B] hover:bg-[#FF7AA2] border-2 border-[#8B5E3C] text-[#FFF6E8] flex items-center justify-center font-bold transition-transform duration-300 hover:rotate-90 hover:scale-105 active:scale-95 cursor-pointer shadow-[0_3px_0_#8B5E3C] active:translate-y-[2px] active:shadow-[0_1px_0_#8B5E3C]"
           aria-label="Close Role Setup"
         >
           <X className="w-4 h-4" />
@@ -133,14 +132,14 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
             <label className="block text-[8px] font-mono font-black text-[#4A3A2A]/50 tracking-wider mb-2 uppercase">
               ✨ SELECT SPENDING STYLE TEMPLATE:
             </label>
-            <div className="flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x">
+            <div className={`flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
               {templates.map((tpl) => (
                 <button
                   key={tpl.id}
                   type="button"
                   disabled={isGenerating}
                   onClick={() => handleSelectTemplate(tpl.text)}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-[#FFF1C7] border-2 border-[#8B5E3C]/40 rounded-full transition-all text-[9px] font-bold font-mono tracking-tight text-[#4A3A2A] shrink-0 snap-start active:translate-y-[1px] hover:border-[#8B5E3C] cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-[#FFF1C7] border-2 border-[#8B5E3C]/40 rounded-full transition-all text-[9px] font-bold font-mono tracking-tight text-[#4A3A2A] shrink-0 snap-start active:translate-y-[1px] hover:border-[#8B5E3C] cursor-pointer"
                 >
                   {tpl.icon}
                   <span className="normal-case">{tpl.label}</span>
@@ -154,12 +153,12 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
             <label htmlFor="confession-text" className="block text-[8px] font-mono font-black text-[#4A3A2A]/50 tracking-wider mb-1.5 uppercase">
               ✍️ EDIT COMPLAINT / FINANCIAL SITUATION:
             </label>
-            <div className="relative flex-1 flex flex-col bg-white border-2 border-[#8B5E3C] rounded-2xl overflow-hidden shadow-[inset_0_2px_4px_rgba(139,94,60,0.06)]">
+            <div className={`relative flex-1 flex flex-col bg-white border-2 border-[#8B5E3C] rounded-2xl overflow-hidden shadow-[inset_0_2px_4px_rgba(139,94,60,0.06)] ${isGenerating ? 'opacity-60' : ''}`}>
               <textarea
                 id="confession-text"
                 rows={5}
                 disabled={isGenerating}
-                className="w-full flex-1 p-3.5 text-xs text-[#4A3A2A] font-mono bg-transparent outline-none resize-none placeholder-[#4A3A2A]/40 leading-relaxed overflow-y-auto disabled:opacity-50"
+                className="w-full flex-1 p-3.5 text-xs text-[#4A3A2A] font-mono bg-transparent outline-none resize-none placeholder-[#4A3A2A]/40 leading-relaxed overflow-y-auto disabled:cursor-not-allowed"
                 placeholder="Ex: I get paid on the first, but order takeaway food every single day and end up living on cup noodles after week 2..."
                 value={confession}
                 onChange={(e) => setConfession(e.target.value)}
@@ -180,26 +179,25 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
           <div className="flex gap-3 mt-1 shrink-0">
             <button
               onClick={onClose}
-              disabled={isGenerating}
               type="button"
-              className="flex-1 py-3 bg-[#FFF1C7] hover:bg-white text-[#4A3A2A] border-2 border-b-4 border-[#8B5E3C] rounded-2xl active:border-b-2 active:translate-y-[2px] transition-all cursor-pointer font-pixel text-[10px] tracking-wider font-bold disabled:opacity-50"
+              className="flex-1 py-3 bg-[#FFF1C7] hover:bg-white text-[#4A3A2A] border-2 border-b-4 border-[#8B5E3C] rounded-2xl active:border-b-2 active:translate-y-[2px] transition-all cursor-pointer font-pixel text-[10px] tracking-wider font-bold"
             >
               CANCEL
             </button>
             <button
               disabled={!confession.trim() || isGenerating}
               type="submit"
-              className="flex-[2] py-3 bg-[#6FD08C] hover:bg-[#5bb776] text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#6FD08C] border-2 border-b-4 border-[#8B5E3C] rounded-2xl active:border-b-2 active:translate-y-[2px] transition-all cursor-pointer font-pixel text-[10px] tracking-wider font-bold flex items-center justify-center gap-2 shadow-sm"
+              className="flex-[2] py-3 bg-[#6FD08C] hover:bg-[#5bb776] text-white disabled:opacity-50 disabled:cursor-not-allowed border-2 border-b-4 border-[#8B5E3C] rounded-2xl active:border-b-2 active:translate-y-[2px] transition-all cursor-pointer font-pixel text-[10px] tracking-wider font-bold flex items-center justify-center gap-2 shadow-sm"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>AI IS JUDGING YOU...</span>
+                  AI IS JUDGING YOU...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5 fill-white stroke-none animate-pulse" />
-                  <span>GENERATE MY LIFE</span>
+                  GENERATE MY LIFE
                 </>
               )}
             </button>
