@@ -18,10 +18,15 @@ import {
   signOut 
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import LeaderboardModal from './LeaderboardModal';
 
 export default function MenuActions() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authErrorDetails, setAuthErrorDetails] = useState<{ code?: string; message?: string; hostname?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
 
   useEffect(() => {
     // Listen to current authentication state changes
@@ -37,9 +42,27 @@ export default function MenuActions() {
     // Configure default parameters to prompt for accounts
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
+      setAuthError(null);
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google Sign In Error:', error);
+      const errCode = error?.code || '';
+      const errMsg = error?.message || '';
+      
+      if (errCode === 'auth/unauthorized-domain' || errMsg.includes('unauthorized-domain')) {
+        setAuthError('unauthorized-domain');
+        setAuthErrorDetails({
+          code: errCode,
+          message: errMsg,
+          hostname: typeof window !== 'undefined' ? window.location.hostname : 'your-app-domain.run.app'
+        });
+      } else if (errCode !== 'auth/popup-closed-by-user') {
+        setAuthError('other');
+        setAuthErrorDetails({
+          code: errCode || 'UNKNOWN',
+          message: errMsg || String(error)
+        });
+      }
     }
   };
 
@@ -51,8 +74,103 @@ export default function MenuActions() {
     }
   };
 
+  const handleCopy = () => {
+    if (authErrorDetails?.hostname) {
+      navigator.clipboard.writeText(authErrorDetails.hostname);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div className="space-y-3 sm:space-y-3.5">
+      {/* Dynamic Instruction / Error Setup Modal */}
+      {authError && (
+        <div className="fixed inset-0 bg-[#4A3A2A]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-6 shadow-[0_16px_32px_rgba(139,94,60,0.3)] anim-menu-box text-left font-mono">
+            {/* Header */}
+            <div className="flex items-center gap-2 text-[#FF6B6B] mb-2">
+              <span className="text-xl">⚠️</span>
+              <h3 className="font-pixel text-sm sm:text-base font-bold uppercase tracking-wider drop-shadow-sm">
+                FIREBASE SETUP NEEDED
+              </h3>
+            </div>
+
+            {authError === 'unauthorized-domain' ? (
+              <div className="space-y-3 text-[10px] sm:text-xs">
+                <p className="text-[#4A3A2A]/85 leading-relaxed font-semibold">
+                  This domain is not allowed to sign in with your Firebase Project yet. Let&apos;s authorize it in your Firebase Console!
+                </p>
+
+                {/* Display Current Domain Box */}
+                <div className="bg-[#FFF1C7] border-2 border-[#8B5E3C] rounded-xl p-3 flex flex-col gap-1">
+                  <span className="text-[8px] text-[#4A3A2A]/50 font-bold uppercase tracking-widest">
+                    YOUR CURRENT DOMAIN:
+                  </span>
+                  <div className="flex items-center justify-between gap-2 bg-white px-2 py-1.5 rounded-lg border border-[#8B5E3C]/30 font-bold text-[#FF7AA2]">
+                    <span className="truncate select-all">{authErrorDetails?.hostname}</span>
+                    <button 
+                      onClick={handleCopy}
+                      type="button"
+                      className="px-2 py-1 bg-[#6FD08C]/15 text-[#6FD08C] border border-[#6FD08C]/40 hover:bg-[#6FD08C]/20 text-[9px] rounded font-pixel transition-all cursor-pointer font-bold shrink-0"
+                    >
+                      {copied ? '✓ COPIED' : 'COPY'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Integration Steps */}
+                <div className="space-y-1 text-[9px] text-[#4A3A2A]/70 uppercase font-bold leading-normal">
+                  <div className="flex gap-1.5">
+                    <span className="text-[#FF9F1C]">1.</span>
+                    <span>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-[#FF9F1C] hover:underline inline-flex items-center gap-0.5">Firebase Console ↗</a></span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <span className="text-[#FF9F1C]">2.</span>
+                    <span>Go to <b className="text-[#4A3A2A]">Authentication &gt; Settings</b></span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <span className="text-[#FF9F1C]">3.</span>
+                    <span>Under <b className="text-[#4A3A2A]">Authorized Domains</b> click &quot;Add domain&quot;</span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <span className="text-[#FF9F1C]">4.</span>
+                    <span>Paste your domain from above and click Add!</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 text-xs text-[#4A3A2A]/85 font-mono">
+                <p className="font-semibold text-rose-500">Firebase sign-in failed with an unexpected response:</p>
+                <div className="bg-[#FFF1C7] border border-[#8B5E3C]/30 rounded-lg p-2.5 text-[9px] overflow-auto max-h-32 text-orange-700">
+                  <p><b>CODE:</b> {authErrorDetails?.code}</p>
+                  <p className="mt-1"><b>MESSAGE:</b> {authErrorDetails?.message}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Actions Footer */}
+            <div className="flex gap-2.5 mt-5">
+              <a 
+                href="https://console.firebase.google.com/"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 bg-[#6FD08C] hover:bg-[#5bb776] text-white font-pixel text-[10px] text-center py-2.5 rounded-xl border-2 border-b-4 border-[#8B5E3C] transition-all cursor-pointer uppercase flex items-center justify-center"
+              >
+                OPEN CONSOLE
+              </a>
+              <button 
+                onClick={() => setAuthError(null)}
+                type="button"
+                className="px-4 bg-[#FFF1C7] hover:bg-white text-[#4A3A2A] font-pixel text-[10px] py-2.5 rounded-xl border-2 border-b-4 border-[#8B5E3C] active:border-b-2 active:translate-y-[1px] transition-all cursor-pointer uppercase"
+              >
+                CLOSE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Primary Action Button: PLAY (Sunny Yellow #FFC857 & shadow alignment) */}
       <button 
         type="button"
@@ -83,6 +201,7 @@ export default function MenuActions() {
 
       {/* Leaderboard stats trigger */}
       <button 
+        onClick={() => setIsLeaderboardOpen(true)}
         type="button"
         className="group relative w-full bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3.5 rounded-xl transition-all flex items-center justify-center gap-2.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
       >
@@ -149,6 +268,12 @@ export default function MenuActions() {
           <span>LOGIN TO SAVE SCORE</span>
         </button>
       )}
+
+      {/* Global Leaderboard Modal Overlay */}
+      <LeaderboardModal 
+        isOpen={isLeaderboardOpen} 
+        onClose={() => setIsLeaderboardOpen(false)} 
+      />
     </div>
   );
 }
