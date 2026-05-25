@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { 
   Play, 
@@ -20,6 +21,7 @@ import {
 import { auth } from '@/lib/firebase';
 import LeaderboardModal from './LeaderboardModal';
 import RoleSetupModal from './RoleSetupModal';
+import GameWrapper from '@/components/GameWrapper';
 
 export default function MenuActions() {
   const [user, setUser] = useState<User | null>(null);
@@ -202,28 +204,14 @@ export default function MenuActions() {
         </div>
       )}
 
-      {gameStarted ? (
-        <div className="w-full bg-[#4A3A2A] border-4 border-[#8B5E3C] rounded-2xl flex flex-col items-center justify-center p-6 text-center shadow-inner relative overflow-hidden">
-          {/* A cute retro background strip inside placeholder */}
-          <div className="absolute top-0 inset-x-0 h-1 bg-[#8B5E3C]/30"></div>
-          
-          <h3 className="font-pixel text-[#FFF6E8] text-sm sm:text-base tracking-widest font-black uppercase mb-3">
-            PHASER GAME CANVAS WILL MOUNT HERE
-          </h3>
-
-          <div className="bg-[#FFF1C7] text-[#4A3A2A] p-4 text-[10px] font-mono text-left w-full overflow-auto max-h-[180px] rounded-xl border-2 border-[#8B5E3C] shadow-sm tracking-tight leading-relaxed select-text">
-            <span className="block font-bold border-b border-[#8B5E3C]/30 pb-1 mb-2 text-[#FF9F1C]">👾 DETECTED SPENDING SINS CONFIG:</span>
-            <pre className="whitespace-pre-wrap">{JSON.stringify(aiConfig, null, 2)}</pre>
-          </div>
-
-          <button 
-            onClick={() => setGameStarted(false)}
-            type="button"
-            className="mt-4 px-6 py-2.5 bg-[#FF6B6B] hover:bg-[#FF7AA2] text-white border-2 border-b-4 border-[#8B5E3C] rounded-xl active:border-b-2 active:translate-y-[2px] transition-all cursor-pointer font-pixel text-[10px] tracking-wider font-bold animate-bounce"
-          >
-            QUIT GAME
+      {gameStarted ? createPortal(
+        <div className="fixed inset-0 z-[100] bg-[#1a1a1a] overflow-hidden">
+          <GameWrapper aiConfig={aiConfig} />
+          <button onClick={() => setGameStarted(false)} className="absolute top-4 right-4 z-[110] px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-pixel text-[10px] rounded-xl border-2 border-b-4 border-rose-800 transition-all uppercase">
+            ABORT MISSION
           </button>
-        </div>
+        </div>,
+        document.body
       ) : (
         <>
           {/* Primary Action Button: PLAY (Sunny Yellow #FFC857 & shadow alignment) */}
