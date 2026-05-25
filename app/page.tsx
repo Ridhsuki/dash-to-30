@@ -133,46 +133,7 @@ export default function HomePage() {
 
         </div>
 
-        {/* Humorous financial ledger mini receipt paper block (#FFF1C7 as asked) */}
-        <div className="w-[88%] mt-4 bg-[#FFF1C7] text-[#4A3A2A] border-2 border-[#8B5E3C] shadow-[0_6px_0_rgba(139,94,60,0.15)] p-3.5 font-mono rounded-xl text-[9px] flex flex-col gap-1 select-none">
-          <div className="flex justify-between font-bold border-b-2 border-dashed border-[#8B5E3C]/30 pb-1.5 mb-1.5 uppercase tracking-wider">
-            <span className="flex items-center gap-1">🧾 DAILY ACCOUNTING</span>
-            <span>DAY 20</span>
-          </div>
-          <div className="space-y-0.5 text-[#4A3A2A]/85">
-            <div className="flex justify-between">
-              <span>- Coffee Temptation</span>
-              <span className="text-[#FF7AA2] font-bold">-$6.50</span>
-            </div>
-            <div className="flex justify-between">
-              <span>- Paylater Traps</span>
-              <span className="text-[#9B8CFF] font-bold">-$24.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span>- Healthy Organic Needs</span>
-              <span className="text-[#6FD08C] font-bold">✓ -$10.00</span>
-            </div>
-          </div>
-          <div className="border-t-2 border-dashed border-[#8B5E3C]/30 mt-1.5 pt-1.5 flex justify-between font-bold text-[#4A3A2A] uppercase text-[8px]">
-            <span>AI ROAST RISK LEVEL:</span>
-            <span className="text-[#FF6B6B] animate-pulse">💸 COFFEE ADDICT INSOLVENCY</span>
-          </div>
-        </div>
-
       </main>
-
-
-      {/* ========================================== */}
-      {/* ================ LOBBY FOOTER ============ */}
-      {/* ========================================== */}
-      <footer className="relative w-full max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center text-[9px] text-[#4A3A2A]/55 font-mono pt-4 border-t-2 border-[#8B5E3C]/15 z-30 uppercase tracking-wider gap-3 sm:gap-0 font-bold">
-        <div>v1.2.0-STABLE</div>
-        <div className="text-[#6FD08C] bg-white border-2 border-[#8B5E3C] rounded-full px-3 py-0.5 shadow-sm font-bold flex items-center gap-1">
-          <span className="w-1.5 h-1.5 bg-[#6FD08C] rounded-full pulse-indicator"></span>
-          CONSOLE INTERACTION SAFE
-        </div>
-        <div>ARCADE CABINET // PORT 3000</div>
-      </footer>
 
     </div>
   );

@@ -128,12 +128,25 @@ export default function LeaderboardModal({ isOpen, onClose }: LeaderboardModalPr
   return createPortal(
     <div 
       id="leaderboard-backdrop"
-      className="fixed inset-0 z-50 bg-[#4A3A2A]/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 bg-[#4A3A2A]/60 backdrop-blur-md flex items-center justify-center p-4"
+      style={{ animation: 'modalFadeIn 0.4s ease-out forwards' }}
     >
+      <style>{`
+        @keyframes modalFadeIn {
+          from { opacity: 0; backdrop-filter: blur(0px); }
+          to { opacity: 1; backdrop-filter: blur(12px); }
+        }
+        @keyframes modalBounceIn {
+          0% { transform: scale(0.85) translateY(20px); opacity: 0; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+      `}</style>
+
       {/* Modal Container in Cozy Indie Game Style with Easter-Egg Bouncy curve */}
       <div 
         id="leaderboard-modal-box"
-        className="relative w-full max-w-md sm:max-w-lg bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_12px_0_#8B5E3C] transform max-h-[90vh] flex flex-col uppercase font-sans animate-in zoom-in-50 slide-in-from-bottom-8 duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+        className="relative w-full max-w-md sm:max-w-lg bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_12px_0_#8B5E3C] transform max-h-[90vh] flex flex-col uppercase font-sans"
+        style={{ animation: 'modalBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
       >
         {/* Receipt-style Top Decoration */}
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-[70%] h-5 bg-[#FFF1C7] border-2 border-[#8B5E3C] border-b-0 rounded-t-lg flex items-center justify-between px-3 text-[8px] text-[#4A3A2A] font-mono tracking-widest font-bold">
@@ -174,7 +187,7 @@ export default function LeaderboardModal({ isOpen, onClose }: LeaderboardModalPr
         )}
 
         {/* Main Score List */}
-        <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[48vh] scrollbar-thin scrollbar-thumb-pink">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[58vh] scrollbar-thin scrollbar-thumb-pink">
           {loading ? (
             <div className="py-12 text-center text-xs font-mono font-bold text-[#4A3A2A]/40 uppercase tracking-widest">
               COLLECTING SCORE RECORDS...
@@ -235,12 +248,6 @@ export default function LeaderboardModal({ isOpen, onClose }: LeaderboardModalPr
               );
             })
           )}
-        </div>
-
-        {/* Footer info inside the leaderboard */}
-        <div className="mt-4 pt-3 border-t-2 border-dashed border-[#8B5E3C]/20 flex justify-between items-center text-[7.5px] font-mono text-[#4A3A2A]/50 uppercase tracking-widest font-bold">
-          <span>CONSOLE ID: D30-{scores.length}</span>
-          <span>© DEEPMIND ARCADE</span>
         </div>
       </div>
     </div>,

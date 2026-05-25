@@ -7,7 +7,6 @@ import {
   Sparkles, 
   Scroll, 
   Flame, 
-  Smile, 
   PenTool,
   Coffee,
   ShoppingBag,
@@ -76,12 +75,25 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit }: RoleSetupM
   return createPortal(
     <div 
       id="rolesetup-backdrop"
-      className="fixed inset-0 z-50 bg-[#4A3A2A]/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 bg-[#4A3A2A]/60 backdrop-blur-md flex items-center justify-center p-4"
+      style={{ animation: 'modalFadeIn 0.4s ease-out forwards' }}
     >
+      <style>{`
+        @keyframes modalFadeIn {
+          from { opacity: 0; backdrop-filter: blur(0px); }
+          to { opacity: 1; backdrop-filter: blur(12px); }
+        }
+        @keyframes modalBounceIn {
+          0% { transform: scale(0.85) translateY(20px); opacity: 0; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+      `}</style>
+
       {/* Modal Container in Cozy Indie Game Style with Easter-Egg Bouncy curve */}
       <div 
         id="rolesetup-modal-box"
-        className="relative w-full max-w-md sm:max-w-lg bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_12px_0_#8B5E3C] transform max-h-[92vh] flex flex-col uppercase font-sans animate-in zoom-in-50 slide-in-from-bottom-8 duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+        className="relative w-full max-w-md sm:max-w-lg bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_12px_0_#8B5E3C] transform max-h-[92vh] flex flex-col uppercase font-sans animate-in"
+        style={{ animation: 'modalBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
       >
         {/* Receipt-style Top Decoration */}
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-[70%] h-5 bg-[#FFF1C7] border-2 border-[#8B5E3C] border-b-0 rounded-t-lg flex items-center justify-between px-3 text-[8px] text-[#4A3A2A] font-mono tracking-widest font-bold">
@@ -118,7 +130,7 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit }: RoleSetupM
             <label className="block text-[8px] font-mono font-black text-[#4A3A2A]/50 tracking-wider mb-2 uppercase">
               ✨ SELECT SPENDING STYLE TEMPLATE:
             </label>
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-pink snap-x">
+            <div className="flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x">
               {templates.map((tpl) => (
                 <button
                   key={tpl.id}
@@ -178,12 +190,6 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit }: RoleSetupM
             </button>
           </div>
         </form>
-
-        {/* Footer info inside the lobby role confessor */}
-        <div className="mt-4 pt-2.5 border-t border-dashed border-[#8B5E3C]/20 flex justify-between items-center text-[7.5px] font-mono text-[#4A3A2A]/40 uppercase tracking-widest font-bold shrink-0">
-          <span>SIN REPORT V1</span>
-          <span className="flex items-center gap-0.5"><Smile className="w-2.5 h-2.5" /> GAMING ENVIRONMENT SECURE</span>
-        </div>
       </div>
     </div>,
     document.body
