@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 
+import { DEPTH } from '../constants/layers';
 import { GAME_HEX, GAME_RGB } from '../theme/gameTheme';
 import type { EntityKind } from '../utils/gameText';
-import { DEPTH } from '../constants/layers';
 
 type EntityLabelStyle = {
   width: number;
@@ -13,41 +13,18 @@ type EntityLabelStyle = {
 };
 
 export function getEntityLabelStyle(kind: EntityKind): EntityLabelStyle {
-  if (kind === 'boss') {
-    return {
-      width: 118,
-      height: 28,
-      bg: GAME_RGB.red,
-      border: GAME_RGB.cream,
-      text: '#FFFFFF',
-    };
-  }
-
-  if (kind === 'want') {
-    return {
-      width: 108,
-      height: 26,
-      bg: GAME_RGB.pink,
-      border: GAME_RGB.red,
-      text: '#FFFFFF',
-    };
-  }
-
-  if (kind === 'need') {
-    return {
-      width: 108,
-      height: 26,
-      bg: GAME_RGB.receipt,
-      border: GAME_RGB.gold,
-      text: GAME_HEX.text,
-    };
-  }
+  const width =
+    kind === 'boss'
+      ? 118
+      : kind === 'payday'
+        ? 104
+        : 108;
 
   return {
-    width: 104,
-    height: 26,
-    bg: GAME_RGB.green,
-    border: GAME_RGB.cream,
+    width,
+    height: kind === 'boss' ? 28 : 26,
+    bg: GAME_RGB.cream,
+    border: GAME_RGB.brown,
     text: GAME_HEX.text,
   };
 }

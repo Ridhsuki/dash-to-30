@@ -1,17 +1,12 @@
 export const GAMEPLAY = {
   startingBalance: 0,
-
   initialPaydayAmount: 2000,
 
   maxDay: 30,
   bossStartDay: 20,
   finalBossDay: 28,
 
-  // 2.6s x 30 hari = sekitar 78 detik.
-  // Ini lebih enak untuk runner pendek, tidak terlalu cepat selesai.
   dayDurationMs: 2600,
-
-  // Minimum durasi slide agar sprite tidak flicker saat hitbox berubah.
   slideMinDurationMs: 180,
 
   baseSpawnDelayMs: 1550,
@@ -27,13 +22,10 @@ export const GAMEPLAY = {
   needCost: -50,
   missedNeedPenalty: -180,
 
-  // Essential Life: berkurang jika player melewatkan kebutuhan.
-  // Ini membuat strategi tidak boleh hanya menghindari semua obstacle.
   maxEssentialLife: 3,
   missedNeedLifePenalty: 1,
   needLifeReward: 0,
 
-  // Skor leaderboard harus berbasis point, bukan balance mentah.
   pointsPerSurvivedDay: 120,
   pointsPerNeedTaken: 45,
   pointsPerMissedNeedPenalty: -70,
@@ -41,17 +33,30 @@ export const GAMEPLAY = {
   pointsPerBossAvoided: 80,
   remainingBalanceDivisor: 25,
 
+  // Needs lebih sering muncul di atas agar jump benar-benar berguna.
+  needJumpLaneChance: 0.68,
+
+  // Wants tetap punya duck lane.
+  wantDuckLaneChance: 0.42,
+
+  // Boss dibuat variatif: sebagian bawah, sebagian atas.
+  bossDuckLaneChance: 0.55,
+
   eventFeedLimit: 5,
 } as const;
 
 export const LANES = {
-  // Ground lane: obstacle/item yang disentuh normal.
   groundOffsetY: 24,
 
-  // Duck lane: obstacle setengah badan.
-  // Player normal kena, player slide bisa lolos.
+  // Untuk obstacle yang harus ditunduki.
   duckOffsetY: 54,
 
-  // Boss/projectile lane.
-  bossOffsetY: 58,
+  // Untuk needs yang harus diraih dengan jump.
+  needJumpOffsetY: 88,
+
+  // Boss duck lane. Normal kena, slide lolos.
+  bossDuckOffsetY: 58,
+
+  // Boss ground lane. Harus dihindari dengan jump.
+  bossGroundOffsetY: 24,
 } as const;

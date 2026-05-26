@@ -17,12 +17,15 @@ import {
     type GameAiConfig,
 } from '../utils/gameText';
 
+type EntityLane = 'ground' | 'duck' | 'jump';
+
 type GameEntitySprite = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody & {
     label?: EntityLabel;
     isNeed?: boolean;
     isBoss?: boolean;
     isInitialPayday?: boolean;
     isDuckLane?: boolean;
+    lane?: EntityLane;
     kind?: EntityKind;
     labelOffsetY?: number;
     fullLabel?: string;
@@ -33,6 +36,7 @@ export class MainScene extends Phaser.Scene {
     cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     pauseKey?: Phaser.Input.Keyboard.Key;
     escapeKey?: Phaser.Input.Keyboard.Key;
+
     emitter!: Phaser.GameObjects.Particles.ParticleEmitter;
     background!: FinancialParallaxBackground;
     incomingNotice!: IncomingNotice;
@@ -68,7 +72,6 @@ export class MainScene extends Phaser.Scene {
     needsTaken: number = 0;
     wantsAvoided: number = 0;
     bossAvoided: number = 0;
-
     essentialLife: number = GAMEPLAY.maxEssentialLife;
 
     hasCollectedInitialPayday: boolean = false;
@@ -166,7 +169,6 @@ export class MainScene extends Phaser.Scene {
         this.player.anims.stop();
         this.player.setTexture('player_slide');
 
-        // Hitbox slide dibuat lebih rendah dan pendek agar duck lane bisa dilewati konsisten.
         this.player.body?.setSize(36, 16);
         this.player.body?.setOffset(6, 32);
         this.player.setGravityY(2200);
@@ -220,21 +222,39 @@ export class MainScene extends Phaser.Scene {
         };
     }
 
+    private updateEssentialLife(amount: number) {
+        this.essentialLife = Phaser.Math.Clamp(
+            this.essentialLife + amount,
+            0,
+            GAMEPLAY.maxEssentialLife,
+        );
+
+        if (this.essentialLifeText) {
+            this.essentialLifeText.setText(`NEEDS LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife}`);
+            this.essentialLifeText.setColor(this.essentialLife <= 1 ? '#FF6B6B' : '#4A3A2A');
+        }
+
+        if (this.essentialLife <= 0 && this.hasCollectedInitialPayday) {
+            this.eventFeed.push('Needs ignored!', 'bad');
+            this.triggerGameOver(false);
+        }
+    }
+
     private createHudButton(x: number, y: number, label: string, onClick: () => void) {
         const button = this.add.text(x, y, label, {
             fontFamily: 'monospace',
-            fontSize: '13px',
+            fontSize: '14px',
             fontStyle: 'bold',
             color: '#4A3A2A',
             backgroundColor: '#FFF1C7',
-            padding: { x: 10, y: 6 },
+            padding: { x: 9, y: 6 },
         })
             .setOrigin(0.5)
             .setScrollFactor(0)
             .setDepth(DEPTH.hud)
             .setInteractive({ useHandCursor: true });
 
-        button.on('pointerover', () => button.setScale(1.05));
+        button.on('pointerover', () => button.setScale(1.06));
         button.on('pointerout', () => button.setScale(1));
         button.on('pointerdown', onClick);
 
@@ -287,41 +307,32 @@ export class MainScene extends Phaser.Scene {
             .setDepth(DEPTH.overlay);
 
         const panel = this.add
-            .rectangle(cx, cy, 430, 300, 0xFFF6E8, 0.98)
+            .rectangle(cx, cy, 420, 250, 0xFFF6E8, 0.98)
             .setStrokeStyle(4, 0xFFC857, 1)
             .setDepth(DEPTH.overlay + 1);
 
-        const title = this.add.text(cx, cy - 105, 'PAUSED', {
+        const title = this.add.text(cx, cy - 86, 'PAUSED', {
             fontFamily: 'monospace',
-            fontSize: '38px',
+            fontSize: '36px',
             fontStyle: 'bold',
             color: '#4A3A2A',
         }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
 
-        const subtitle = this.add.text(cx, cy - 68, 'Dompet tarik napas dulu.', {
+        const subtitle = this.add.text(cx, cy - 50, 'Dompet tarik napas dulu.', {
             fontFamily: 'monospace',
             fontSize: '14px',
             color: '#8B5E3C',
         }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
 
-        const resume = this.createMenuButton(cx, cy - 20, 'RESUME RUN', '#4A3A2A', '#6FD08C', () => this.hidePauseMenu());
+        const resume = this.createMenuButton(cx, cy + 10, 'RESUME RUN', '#4A3A2A', '#6FD08C', () => this.hidePauseMenu());
 
-        const restart = this.createMenuButton(cx, cy + 32, 'RESTART', '#4A3A2A', '#FFC857', () => {
+        const restart = this.createMenuButton(cx, cy + 66, 'RESTART', '#4A3A2A', '#FFC857', () => {
             this.scene.stop('MainScene');
             this.scene.start('MainScene');
         });
 
-        const quit = this.createMenuButton(cx, cy + 84, 'QUIT TO HOME', '#FFF6E8', '#8B5E3C', () => {
-            EventBus.emit('go-home');
-            this.scene.stop('MainScene');
-
-            if (typeof window !== 'undefined') {
-                window.location.href = '/';
-            }
-        });
-
         this.pauseOverlay = this.add
-            .container(0, 0, [backdrop, panel, title, subtitle, resume, restart, quit])
+            .container(0, 0, [backdrop, panel, title, subtitle, resume, restart])
             .setDepth(DEPTH.overlay)
             .setAlpha(0)
             .setScale(0.94);
@@ -401,27 +412,6 @@ export class MainScene extends Phaser.Scene {
         }
     }
 
-
-    private updateEssentialLife(amount: number) {
-        this.essentialLife = Phaser.Math.Clamp(
-            this.essentialLife + amount,
-            0,
-            GAMEPLAY.maxEssentialLife,
-        );
-
-        if (this.essentialLifeText) {
-            this.essentialLifeText.setText(`NEEDS LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife}`);
-
-            const color = this.essentialLife <= 1 ? '#FF6B6B' : '#4A3A2A';
-            this.essentialLifeText.setColor(color);
-        }
-
-        if (this.essentialLife <= 0 && this.hasCollectedInitialPayday) {
-            this.eventFeed.push('Needs ignored!', 'bad');
-            this.triggerGameOver(false);
-        }
-    }
-
     create() {
         this.cameras.main.setBackgroundColor('#DFF4FF');
         this.cameras.main.roundPixels = true;
@@ -465,9 +455,9 @@ export class MainScene extends Phaser.Scene {
                 Phaser.Input.Keyboard.KeyCodes.SPACE,
                 Phaser.Input.Keyboard.KeyCodes.UP,
                 Phaser.Input.Keyboard.KeyCodes.DOWN,
-
                 Phaser.Input.Keyboard.KeyCodes.P,
-                Phaser.Input.Keyboard.KeyCodes.ESC,]);
+                Phaser.Input.Keyboard.KeyCodes.ESC,
+            ]);
 
             this.cursors = this.input.keyboard.createCursorKeys();
             this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
@@ -498,17 +488,6 @@ export class MainScene extends Phaser.Scene {
             fontStyle: 'bold',
         }).setScrollFactor(0).setDepth(DEPTH.hud);
 
-        this.dayText = this.add.text(width - 20, 20, `DAY: ${this.day}/${GAMEPLAY.maxDay}`, {
-            fontSize: '24px',
-            color: '#FFF6E8',
-            backgroundColor: '#8B5E3C',
-            padding: { x: 10, y: 5 },
-            fontFamily: 'monospace',
-            fontStyle: 'bold',
-        }).setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud);
-
-        this.createHudButton(width - 80, 58, 'PAUSE', () => this.showPauseMenu());
-
         this.essentialLifeText = this.add.text(20, 58, `NEEDS LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife}`, {
             fontSize: '16px',
             color: '#4A3A2A',
@@ -520,6 +499,17 @@ export class MainScene extends Phaser.Scene {
 
         this.progressBar = new ProgressBar(this, width);
         this.progressBar.update(this.day, GAMEPLAY.maxDay);
+
+        this.createHudButton(width - 218, 31, 'Ⅱ', () => this.showPauseMenu());
+
+        this.dayText = this.add.text(width - 20, 20, `DAY: ${this.day}/${GAMEPLAY.maxDay}`, {
+            fontSize: '24px',
+            color: '#FFF6E8',
+            backgroundColor: '#8B5E3C',
+            padding: { x: 10, y: 5 },
+            fontFamily: 'monospace',
+            fontStyle: 'bold',
+        }).setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud);
 
         this.incomingNotice = new IncomingNotice(this, width);
         this.eventFeed = new EventFeed(this, width, height);
@@ -585,7 +575,7 @@ export class MainScene extends Phaser.Scene {
         sprite.fullLabel = labelData.fullLabel;
         sprite.isInitialPayday = true;
 
-        this.incomingNotice.show('First Payday', 'payday');
+        this.incomingNotice.show('First Payday', 'payday', `+$${GAMEPLAY.initialPaydayAmount}`);
         this.eventFeed.push('Incoming payday', 'good');
     }
 
@@ -609,8 +599,6 @@ export class MainScene extends Phaser.Scene {
 
         if (this.day === GAMEPLAY.finalBossDay) {
             this.gameSpeedMultiplier = 1.48;
-            this.cameras.main.flash(1000, 255, 100, 100);
-            this.background.pulseCrisis();
             this.createSpawnTimer(GAMEPLAY.bossSpawnDelayMs);
             this.eventFeed.push('Final boss pressure!', 'bad');
         }
@@ -634,6 +622,7 @@ export class MainScene extends Phaser.Scene {
         let tex = '';
         let velocityX: number = GAMEPLAY.baseObstacleSpeed;
         let kind: EntityKind = 'want';
+        let lane: EntityLane = 'ground';
 
         if (this.isBossStage && Math.random() < 0.35) {
             isBoss = true;
@@ -641,6 +630,7 @@ export class MainScene extends Phaser.Scene {
             rawWord = 'Tax Audit';
             tex = 'tex_boss';
             velocityX = GAMEPLAY.bossObstacleSpeed;
+            lane = Math.random() < GAMEPLAY.bossDuckLaneChance ? 'duck' : 'ground';
         } else {
             const rand = Math.random();
 
@@ -649,11 +639,13 @@ export class MainScene extends Phaser.Scene {
                 kind = 'want';
                 rawWord = pickRandomLabel(this.aiConfig.wants, 'Debt');
                 tex = 'tex_want';
+                lane = Math.random() < GAMEPLAY.wantDuckLaneChance ? 'duck' : 'ground';
             } else {
                 isNeed = true;
                 kind = 'need';
                 rawWord = pickRandomLabel(this.aiConfig.needs, 'Bill');
                 tex = 'tex_need';
+                lane = Math.random() < GAMEPLAY.needJumpLaneChance ? 'jump' : 'ground';
             }
         }
 
@@ -665,14 +657,12 @@ export class MainScene extends Phaser.Scene {
 
         let spawnY = floorY - LANES.groundOffsetY;
 
-        const shouldUseDuckLane = isWant && Math.random() < 0.42;
-
-        if (shouldUseDuckLane) {
-            spawnY = floorY - LANES.duckOffsetY;
+        if (lane === 'duck') {
+            spawnY = floorY - (isBoss ? LANES.bossDuckOffsetY : LANES.duckOffsetY);
         }
 
-        if (isBoss) {
-            spawnY = floorY - LANES.bossOffsetY;
+        if (lane === 'jump') {
+            spawnY = floorY - LANES.needJumpOffsetY;
         }
 
         const targetGroup =
@@ -696,24 +686,28 @@ export class MainScene extends Phaser.Scene {
         sprite.body.setImmovable(true);
         sprite.body.setVelocityX(velocityX);
 
-        if (isBoss) {
-            // Boss-lane obstacle: harus kena player normal, tetapi bisa dilewati saat slide.
+        if (isBoss && lane === 'duck') {
             sprite.body.setSize(58, 58);
             sprite.body.setOffset(10, 10);
-        } else if (shouldUseDuckLane) {
-            // Duck-lane obstacle: visual tetap 48x48, tetapi hitbox dibuat tinggi.
-            // Player normal akan kena, player slide dengan hitbox rendah dapat lewat.
+        } else if (isBoss) {
+            sprite.body.setSize(56, 56);
+            sprite.body.setOffset(11, 11);
+        } else if (lane === 'duck') {
             sprite.body.setSize(36, 50);
             sprite.body.setOffset(6, -2);
+        } else if (lane === 'jump') {
+            sprite.body.setSize(34, 34);
+            sprite.body.setOffset(7, 7);
         } else {
             sprite.body.setSize(34, 34);
             sprite.body.setOffset(7, 7);
         }
 
-        sprite.isDuckLane = shouldUseDuckLane;
+        sprite.isDuckLane = lane === 'duck';
+        sprite.lane = lane;
 
         const labelData = compactEntityLabel(rawWord, kind);
-        const labelOffsetY = isBoss ? 72 : shouldUseDuckLane ? 62 : 54;
+        const labelOffsetY = isBoss ? 72 : lane === 'duck' ? 62 : 54;
 
         sprite.label = new EntityLabel(
             this,
@@ -729,7 +723,16 @@ export class MainScene extends Phaser.Scene {
         sprite.labelOffsetY = labelOffsetY;
         sprite.fullLabel = labelData.fullLabel;
 
-        this.incomingNotice.show(labelData.fullLabel, kind);
+        const impactText =
+            kind === 'want'
+                ? `${GAMEPLAY.wantDamage < 0 ? '-' : '+'}$${Math.abs(GAMEPLAY.wantDamage)}`
+                : kind === 'need'
+                    ? `${GAMEPLAY.needCost < 0 ? '-' : '+'}$${Math.abs(GAMEPLAY.needCost)}`
+                    : kind === 'boss'
+                        ? `${GAMEPLAY.bossDamage < 0 ? '-' : '+'}$${Math.abs(GAMEPLAY.bossDamage)}`
+                        : '';
+
+        this.incomingNotice.show(labelData.fullLabel, kind, impactText);
 
         const isDev =
             typeof process !== 'undefined' &&
@@ -738,6 +741,7 @@ export class MainScene extends Phaser.Scene {
         if (isDev) {
             console.debug('[DashTo30] Spawn entity:', {
                 kind,
+                lane,
                 texture: tex,
                 x: sprite.x,
                 y: sprite.y,
@@ -822,6 +826,7 @@ export class MainScene extends Phaser.Scene {
         entity.label?.destroy();
         entity.destroy();
     }
+
     triggerGameOver(isWin: boolean) {
         if (this.isGameOver) return;
 
@@ -849,6 +854,7 @@ export class MainScene extends Phaser.Scene {
             needsTaken: this.needsTaken,
             wantsAvoided: this.wantsAvoided,
             bossAvoided: this.bossAvoided,
+            essentialLife: this.essentialLife,
             isNewPersonalHighScore: highScore.isNewHighScore,
             previousPersonalBest: highScore.previousBest,
         });
@@ -908,7 +914,7 @@ export class MainScene extends Phaser.Scene {
             wordWrap: { width: 520, useAdvancedWrap: true },
         }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
 
-        this.add.text(cx, cy + 48, `NEEDS: ${this.needsTaken} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`, {
+        this.add.text(cx, cy + 48, `NEEDS: ${this.needsTaken} | LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`, {
             fontSize: '15px',
             color: '#4A3A2A',
             fontFamily: 'monospace',
@@ -948,7 +954,6 @@ export class MainScene extends Phaser.Scene {
             this.spawnConfetti();
         }
     }
-
 
     update() {
         if (this.isGameOver) return;
@@ -994,8 +999,6 @@ export class MainScene extends Phaser.Scene {
                 now - this.lastGroundedAt <= 120 &&
                 !this.isSliding;
 
-            // Slide diprioritaskan selama tombol bawah ditahan.
-            // State ini tidak boleh ditimpa run/jump sebelum tombol dilepas.
             if (wantsToSlide && (isGrounded || this.isSliding)) {
                 if (!this.isSliding) {
                     this.setPlayerSlideState();
@@ -1022,10 +1025,7 @@ export class MainScene extends Phaser.Scene {
                     this.emitter.stop();
                 } else {
                     this.player.anims.play('player-run', true);
-
-                    if (!this.emitter.on) {
-                        this.emitter.start();
-                    }
+                    this.emitter.start();
                 }
             }
         }
