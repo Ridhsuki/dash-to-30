@@ -1,18 +1,39 @@
 import { Scene } from 'phaser';
+
 import { EventBus } from '../EventBus';
+import { FinancialParallaxBackground } from '../background/FinancialParallaxBackground';
+import { DEPTH } from '../constants/layers';
+import { createCoreGameTextures } from '../textures/GameTextures';
+import { EntityLabel } from '../ui/EntityLabel';
+import { IncomingNotice } from '../ui/IncomingNotice';
+import {
+    compactEntityLabel,
+    normalizeAiConfig,
+    pickRandomLabel,
+    type EntityKind,
+    type GameAiConfig,
+} from '../utils/gameText';
+
+type GameEntitySprite = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody & {
+    label?: EntityLabel;
+    isNeed?: boolean;
+    isBoss?: boolean;
+    kind?: EntityKind;
+    labelOffsetY?: number;
+    fullLabel?: string;
+};
 
 export class MainScene extends Scene {
     player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     isSliding: boolean = false;
-    floorLayer!: Phaser.GameObjects.TileSprite;
-    midLayer!: Phaser.GameObjects.TileSprite;
-    farLayer!: Phaser.GameObjects.TileSprite;
     emitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+    background!: FinancialParallaxBackground;
 
     balance: number = 2000;
     day: number = 1;
-    aiConfig: any = null;
+    aiConfig: GameAiConfig = normalizeAiConfig(null);
+    incomingNotice!: IncomingNotice;
     isBossStage: boolean = false;
 
     obstacleGroup!: Phaser.Physics.Arcade.Group;
@@ -36,78 +57,44 @@ export class MainScene extends Scene {
         this.day = 1;
         this.isSliding = false;
 
+        let storedConfig: unknown = null;
+
         try {
             const stored = localStorage.getItem('dashTo30_aiConfig');
             if (stored) {
-                this.aiConfig = JSON.parse(stored);
+                storedConfig = JSON.parse(stored);
             }
-        } catch (e) {
-            console.error("Failed to parse aiConfig", e);
+        } catch (error) {
+            console.error('Failed to parse aiConfig', error);
         }
 
-        if (!this.aiConfig || !this.aiConfig.wants || !this.aiConfig.needs) {
-            this.aiConfig = {
-                wants: ["Coffee", "Gacha", "Paylater"],
-                needs: ["Rent", "Groceries"],
-                roast: "Broke!"
-            };
-        }
+        this.aiConfig = normalizeAiConfig(storedConfig);
     }
 
     preload() {
-        const graphics = this.make.graphics({ x: 0, y: 0 });
-
-        graphics.fillStyle(0x8B5E3C, 1);
-        graphics.fillRect(0, 0, 32, 32);
-        graphics.generateTexture('floor', 32, 32);
-
-        graphics.clear();
-        graphics.fillStyle(0x6FD08C, 1);
-        graphics.fillRect(0, 0, 32, 32);
-        graphics.generateTexture('player', 32, 32);
-
-        graphics.clear();
-        graphics.fillStyle(0x8B5E3C, 1);
-        graphics.fillRect(0, 0, 6, 6);
-        graphics.generateTexture('particle', 6, 6);
-
-        graphics.clear();
-        graphics.fillStyle(0xFF6B6B, 1);
-        graphics.fillRect(0, 0, 32, 32);
-        graphics.generateTexture('tex_want', 32, 32);
-
-        graphics.clear();
-        graphics.fillStyle(0xFFC857, 1);
-        graphics.fillRect(0, 0, 32, 32);
-        graphics.generateTexture('tex_need', 32, 32);
-
-        graphics.clear();
-        graphics.fillStyle(0x6FD08C, 1);
-        graphics.fillRect(0, 0, 32, 32);
-        graphics.generateTexture('tex_payday', 32, 32);
-
-        // Tekstur Boss Stage
-        graphics.clear();
-        graphics.fillStyle(0x000000, 1);
-        graphics.fillRect(0, 0, 64, 64);
-        graphics.generateTexture('tex_boss', 64, 64);
+        createCoreGameTextures(this);
     }
 
     create() {
-        this.cameras.main.setBackgroundColor('#FFF6E8');
+        this.cameras.main.setBackgroundColor('#DFF4FF');
+        this.cameras.main.roundPixels = true;
 
         const width = this.scale.width;
         const height = this.scale.height;
         const floorY = height - 32;
 
-        this.farLayer = this.add.tileSprite(width / 2, height / 2 - 20, width, height, 'floor').setTint(0xF0E5D1);
-        this.midLayer = this.add.tileSprite(width / 2, height / 2 + 30, width, height, 'floor').setTint(0xE5D3B8);
-        this.floorLayer = this.add.tileSprite(width / 2, floorY + 16, width, 32, 'floor');
+        this.background = new FinancialParallaxBackground(this);
+        this.background.create(width, height, floorY);
 
-        this.player = this.physics.add.sprite(100, floorY - 16, 'player');
-        this.player.setCollideWorldBounds(true);
-        this.player.setGravityY(1500);
-        this.physics.world.setBounds(0, 0, width, floorY);
+        this.player = this.physics.add.sprite(100, floorY - 21, 'player');
+        this.player
+            .setDepth(DEPTH.gameplay + 2)
+            .setCollideWorldBounds(true)
+            .setGravityY(1500);
+
+        this.player.body.setSize(24, 34);
+        this.player.body.setOffset(6, 6);
+        this.physics.world.setBounds(0, 0, width + 220, floorY);
 
         this.emitter = this.add.particles(0, 0, 'particle', {
             speed: { min: -100, max: -50 },
@@ -123,9 +110,20 @@ export class MainScene extends Scene {
             this.cursors = this.input.keyboard.createCursorKeys();
         }
 
-        this.obstacleGroup = this.physics.add.group({ allowGravity: false });
-        this.itemGroup = this.physics.add.group({ allowGravity: false });
-        this.paydayGroup = this.physics.add.group({ allowGravity: false });
+        this.obstacleGroup = this.physics.add.group({
+            allowGravity: false,
+            immovable: true,
+        });
+
+        this.itemGroup = this.physics.add.group({
+            allowGravity: false,
+            immovable: true,
+        });
+
+        this.paydayGroup = this.physics.add.group({
+            allowGravity: false,
+            immovable: true,
+        });
 
         this.balanceText = this.add.text(20, 20, `BALANCE: $${this.balance}`, {
             fontSize: '24px',
@@ -134,7 +132,7 @@ export class MainScene extends Scene {
             padding: { x: 10, y: 5 },
             fontFamily: 'monospace',
             fontStyle: 'bold'
-        }).setScrollFactor(0);
+        }).setScrollFactor(0).setDepth(30);
 
         this.dayText = this.add.text(width - 20, 20, `DAY: ${this.day}/30`, {
             fontSize: '24px',
@@ -143,17 +141,24 @@ export class MainScene extends Scene {
             padding: { x: 10, y: 5 },
             fontFamily: 'monospace',
             fontStyle: 'bold'
-        }).setOrigin(1, 0).setScrollFactor(0);
+        }).setOrigin(1, 0).setScrollFactor(0).setDepth(30);
 
+        this.incomingNotice = new IncomingNotice(this, width);
         this.physics.add.overlap(this.player, this.obstacleGroup, this.hitWant, undefined, this);
         this.physics.add.overlap(this.player, this.itemGroup, this.hitNeed, undefined, this);
         this.physics.add.overlap(this.player, this.paydayGroup, this.hitPayday, undefined, this);
 
         this.spawnTimer = this.time.addEvent({
-            delay: 1800,
+            delay: 1650,
             callback: this.spawnEntity,
             callbackScope: this,
-            loop: true
+            loop: true,
+        });
+
+        this.time.delayedCall(500, () => {
+            if (!this.isGameOver) {
+                this.spawnEntity();
+            }
         });
 
         this.dayTimer = this.time.addEvent({
@@ -175,7 +180,7 @@ export class MainScene extends Scene {
         if (this.day === 28 && !this.isBossStage) {
             this.isBossStage = true;
             this.cameras.main.flash(1000, 255, 100, 100);
-            this.cameras.main.setBackgroundColor('#FFD6D6'); // Latar berubah merah muda krisis
+            this.background.pulseCrisis();
             this.spawnTimer.timeScale = 1.5; // Spawn lebih cepat
         }
 
@@ -190,67 +195,111 @@ export class MainScene extends Scene {
         const width = this.scale.width;
         const floorY = this.scale.height - 32;
 
-        let isWant = false, isNeed = false, isPayday = false, isBoss = false;
-        let word = "";
-        let tex = "";
-        let velocityX = -250;
+        let isWant = false;
+        let isNeed = false;
+        let isPayday = false;
+        let isBoss = false;
 
-        // Logika Spawning
+        let rawWord = '';
+        let tex = '';
+        let velocityX = -250;
+        let kind: EntityKind = 'want';
+
         if (this.isBossStage) {
-            // Hanya mengeluarkan Boss
             isBoss = true;
-            word = "TAX AUDIT!";
+            kind = 'boss';
+            rawWord = 'Tax Audit';
             tex = 'tex_boss';
-            velocityX = -350; // Lebih cepat
+            velocityX = -350;
         } else {
             const rand = Math.random();
+
             if (rand < 0.5) {
                 isWant = true;
-                word = this.aiConfig.wants[Math.floor(Math.random() * this.aiConfig.wants.length)] || "Debt";
+                kind = 'want';
+                rawWord = pickRandomLabel(this.aiConfig.wants, 'Debt');
                 tex = 'tex_want';
             } else if (rand < 0.8) {
                 isNeed = true;
-                word = this.aiConfig.needs[Math.floor(Math.random() * this.aiConfig.needs.length)] || "Bill";
+                kind = 'need';
+                rawWord = pickRandomLabel(this.aiConfig.needs, 'Bill');
                 tex = 'tex_need';
             } else {
                 isPayday = true;
-                word = "PAYDAY!";
+                kind = 'payday';
+                rawWord = 'Payday';
                 tex = 'tex_payday';
             }
         }
 
         let spawnY = floorY - 16;
 
-        // Boss atau Want bisa melayang tinggi
         if ((isWant || isBoss) && Math.random() > 0.5) {
             spawnY = isBoss ? floorY - 80 : floorY - 65;
         }
 
-        // Pastikan Boss ada di tanah (offset karena ukurannya lebih besar 64x64)
         if (isBoss && spawnY === floorY - 16) {
             spawnY = floorY - 32;
         }
 
-        const sprite = this.physics.add.sprite(width + 50, spawnY, tex) as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+        const targetGroup =
+            isWant || isBoss
+                ? this.obstacleGroup
+                : isNeed
+                    ? this.itemGroup
+                    : this.paydayGroup;
 
-        if (isWant || isBoss) this.obstacleGroup.add(sprite);
-        else if (isNeed) this.itemGroup.add(sprite);
-        else this.paydayGroup.add(sprite);
+        const sprite = targetGroup.create(
+            width + 44,
+            Math.round(spawnY),
+            tex,
+        ) as GameEntitySprite;
 
-        sprite.setVelocityX(velocityX);
+        sprite
+            .setDepth(DEPTH.gameplay)
+            .setActive(true)
+            .setVisible(true)
+            .setOrigin(0.5, 0.5);
 
-        const textObj = this.add.text(sprite.x, sprite.y - (isBoss ? 45 : 35), word, {
-            fontSize: '16px',
-            color: isBoss ? '#FFFFFF' : '#4A3A2A',
-            fontFamily: 'monospace',
-            fontStyle: 'bold',
-            backgroundColor: isBoss ? '#FF6B6B' : '#FFF1C7',
-            padding: { left: 8, right: 8, top: 4, bottom: 4 }
-        }).setOrigin(0.5);
+        sprite.body.setAllowGravity(false);
+        sprite.body.setImmovable(true);
+        sprite.body.setVelocityX(velocityX);
+        sprite.body.setSize(isBoss ? 52 : 30, isBoss ? 52 : 30);
+        sprite.body.setOffset(isBoss ? 10 : 6, isBoss ? 6 : 6);
 
-        (sprite as any).label = textObj;
-        (sprite as any).isNeed = isNeed;
-        (sprite as any).isBoss = isBoss;
+        const labelData = compactEntityLabel(rawWord, kind);
+        const labelOffsetY = isBoss ? 62 : 46;
+
+        sprite.label = new EntityLabel(
+            this,
+            sprite.x,
+            sprite.y - labelOffsetY,
+            labelData.shortLabel,
+            kind,
+        );
+
+        sprite.isNeed = isNeed;
+        sprite.isBoss = isBoss;
+        sprite.kind = kind;
+        sprite.labelOffsetY = labelOffsetY;
+        sprite.fullLabel = labelData.fullLabel;
+
+        this.incomingNotice.show(labelData.fullLabel, kind);
+        const isDev =
+            typeof process !== 'undefined' &&
+            process.env?.NODE_ENV !== 'production';
+
+        if (isDev) {
+            console.debug('[DashTo30] Spawn entity:', {
+                kind,
+                texture: tex,
+                x: sprite.x,
+                y: sprite.y,
+                visible: sprite.visible,
+                active: sprite.active,
+                velocityX: sprite.body.velocity.x,
+            });
+        }
     }
 
     hitWant(player: any, want: any) {
@@ -289,8 +338,8 @@ export class MainScene extends Scene {
         }
     }
 
-    destroyEntity(entity: any) {
-        if (entity.label) entity.label.destroy();
+    destroyEntity(entity: GameEntitySprite) {
+        entity.label?.destroy();
         entity.destroy();
     }
 
@@ -353,55 +402,59 @@ export class MainScene extends Scene {
     update() {
         if (this.isGameOver) return;
 
-        this.farLayer.tilePositionX += (this.isBossStage ? 1.0 : 0.5);
-        this.midLayer.tilePositionX += (this.isBossStage ? 3.0 : 1.5);
-        this.floorLayer.tilePositionX += (this.isBossStage ? 5 : 3);
+        this.background.update(this.day, this.isBossStage);
 
-        if (!this.cursors) return;
+        if (this.cursors) {
+            const isGrounded = this.player.body?.blocked.down;
 
-        const isGrounded = this.player.body?.blocked.down;
-
-        if ((this.cursors.space.isDown || this.cursors.up.isDown) && isGrounded && !this.isSliding) {
-            this.player.setVelocityY(-700);
-            this.player.setScale(0.8, 1.2);
-            this.emitter.stop();
-        }
-        else if (isGrounded && !this.isSliding) {
-            this.player.setScale(1, 1);
-            if (!this.emitter.on) this.emitter.start();
-        }
-
-        if (this.cursors.down.isDown) {
-            if (!this.isSliding) {
-                this.isSliding = true;
-                this.player.setScale(1, 0.5);
-                this.player.body?.setSize(32, 16);
-                this.player.body?.setOffset(0, 16);
-                this.player.setGravityY(3500);
+            if ((this.cursors.space.isDown || this.cursors.up.isDown) && isGrounded && !this.isSliding) {
+                this.player.setVelocityY(-700);
+                this.player.setScale(0.8, 1.2);
+                this.emitter.stop();
+            } else if (isGrounded && !this.isSliding) {
+                this.player.setScale(1, 1);
+                if (!this.emitter.on) this.emitter.start();
             }
-        } else if (this.isSliding) {
-            this.isSliding = false;
-            this.player.setScale(1, 1);
-            this.player.body?.setSize(32, 32);
-            this.player.body?.setOffset(0, 0);
-            this.player.setGravityY(1500);
-            if (isGrounded) {
-                this.player.y -= 16;
+
+            if (this.cursors.down.isDown) {
+                if (!this.isSliding) {
+                    this.isSliding = true;
+                    this.player.setScale(1, 0.5);
+                    this.player.body?.setSize(32, 16);
+                    this.player.body?.setOffset(0, 16);
+                    this.player.setGravityY(3500);
+                }
+            } else if (this.isSliding) {
+                this.isSliding = false;
+                this.player.setScale(1, 1);
+                this.player.body?.setSize(24, 34);
+                this.player.body?.setOffset(6, 6);
+                this.player.setGravityY(1500);
+
+                if (isGrounded) {
+                    this.player.y -= 16;
+                }
             }
         }
 
         const cleanup = (group: Phaser.Physics.Arcade.Group) => {
-            group.getChildren().forEach((child: any) => {
-                if (child.x < -100) {
-                    if (child.isNeed) {
+            group.getChildren().forEach((child) => {
+                const entity = child as GameEntitySprite;
+
+                if (entity.x < -120) {
+                    if (entity.isNeed) {
                         this.updateBalance(-200);
                         this.cameras.main.shake(100, 0.01);
                     }
-                    this.destroyEntity(child);
-                } else if (child.label) {
-                    child.label.x = child.x;
-                    child.label.y = child.y - (child.isBoss ? 45 : 35);
+
+                    this.destroyEntity(entity);
+                    return;
                 }
+
+                entity.label?.update(
+                    entity.x,
+                    entity.y - (entity.labelOffsetY ?? 40),
+                );
             });
         };
 

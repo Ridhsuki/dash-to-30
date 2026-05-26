@@ -1,0 +1,15 @@
+export const DEPTH = {
+  sky: -50,
+  glow: -45,
+  cloudsBack: -40,
+  cloudsFront: -39,
+  cityBack: -30,
+  cityFront: -20,
+  floaters: -16,
+  road: -8,
+  roadDecor: -7,
+  gameplay: 14,
+  gameplayLabel: 28,
+  hud: 40,
+  overlay: 80,
+} as const;
