@@ -27,9 +27,16 @@ export const GAMEPLAY = {
   needCost: -50,
   missedNeedPenalty: -180,
 
+  // Essential Life: berkurang jika player melewatkan kebutuhan.
+  // Ini membuat strategi tidak boleh hanya menghindari semua obstacle.
+  maxEssentialLife: 3,
+  missedNeedLifePenalty: 1,
+  needLifeReward: 0,
+
   // Skor leaderboard harus berbasis point, bukan balance mentah.
   pointsPerSurvivedDay: 120,
   pointsPerNeedTaken: 45,
+  pointsPerMissedNeedPenalty: -70,
   pointsPerWantAvoided: 35,
   pointsPerBossAvoided: 80,
   remainingBalanceDivisor: 25,

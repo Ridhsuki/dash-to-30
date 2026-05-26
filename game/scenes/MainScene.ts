@@ -8,6 +8,7 @@ import { createCoreGameTextures } from '../textures/GameTextures';
 import { EntityLabel } from '../ui/EntityLabel';
 import { EventFeed } from '../ui/EventFeed';
 import { IncomingNotice } from '../ui/IncomingNotice';
+import { ProgressBar } from '../ui/ProgressBar';
 import {
     compactEntityLabel,
     normalizeAiConfig,
@@ -34,6 +35,7 @@ export class MainScene extends Phaser.Scene {
     background!: FinancialParallaxBackground;
     incomingNotice!: IncomingNotice;
     eventFeed!: EventFeed;
+    progressBar!: ProgressBar;
 
     obstacleGroup!: Phaser.Physics.Arcade.Group;
     itemGroup!: Phaser.Physics.Arcade.Group;
@@ -41,6 +43,7 @@ export class MainScene extends Phaser.Scene {
 
     balanceText!: Phaser.GameObjects.Text;
     dayText!: Phaser.GameObjects.Text;
+    essentialLifeText!: Phaser.GameObjects.Text;
 
     spawnTimer!: Phaser.Time.TimerEvent;
     dayTimer!: Phaser.Time.TimerEvent;
@@ -62,6 +65,8 @@ export class MainScene extends Phaser.Scene {
     wantsAvoided: number = 0;
     bossAvoided: number = 0;
 
+    essentialLife: number = GAMEPLAY.maxEssentialLife;
+
     hasCollectedInitialPayday: boolean = false;
     controlsLocked: boolean = true;
     gameSpeedMultiplier: number = 1;
@@ -82,6 +87,7 @@ export class MainScene extends Phaser.Scene {
         this.needsTaken = 0;
         this.wantsAvoided = 0;
         this.bossAvoided = 0;
+        this.essentialLife = GAMEPLAY.maxEssentialLife;
 
         this.hasCollectedInitialPayday = false;
         this.controlsLocked = true;
@@ -182,6 +188,26 @@ export class MainScene extends Phaser.Scene {
         return Math.max(0, this.scorePoints + balanceBonus);
     }
 
+    private updateEssentialLife(amount: number) {
+        this.essentialLife = Phaser.Math.Clamp(
+            this.essentialLife + amount,
+            0,
+            GAMEPLAY.maxEssentialLife,
+        );
+
+        if (this.essentialLifeText) {
+            this.essentialLifeText.setText(`NEEDS LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife}`);
+
+            const color = this.essentialLife <= 1 ? '#FF6B6B' : '#4A3A2A';
+            this.essentialLifeText.setColor(color);
+        }
+
+        if (this.essentialLife <= 0 && this.hasCollectedInitialPayday) {
+            this.eventFeed.push('Needs ignored!', 'bad');
+            this.triggerGameOver(false);
+        }
+    }
+
     create() {
         this.cameras.main.setBackgroundColor('#DFF4FF');
         this.cameras.main.roundPixels = true;
@@ -263,6 +289,18 @@ export class MainScene extends Phaser.Scene {
             fontStyle: 'bold',
         }).setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud);
 
+        this.essentialLifeText = this.add.text(20, 58, `NEEDS LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife}`, {
+            fontSize: '16px',
+            color: '#4A3A2A',
+            backgroundColor: '#FFF6E8',
+            padding: { x: 8, y: 4 },
+            fontFamily: 'monospace',
+            fontStyle: 'bold',
+        }).setScrollFactor(0).setDepth(DEPTH.hud);
+
+        this.progressBar = new ProgressBar(this, width);
+        this.progressBar.update(this.day, GAMEPLAY.maxDay);
+
         this.incomingNotice = new IncomingNotice(this, width);
         this.eventFeed = new EventFeed(this, width, height);
 
@@ -336,6 +374,7 @@ export class MainScene extends Phaser.Scene {
 
         this.day += 1;
         this.dayText.setText(`DAY: ${this.day}/${GAMEPLAY.maxDay}`);
+        this.progressBar?.update(this.day, GAMEPLAY.maxDay);
 
         this.scorePoints += GAMEPLAY.pointsPerSurvivedDay;
 
@@ -512,6 +551,10 @@ export class MainScene extends Phaser.Scene {
         this.needsTaken += 1;
         this.scorePoints += GAMEPLAY.pointsPerNeedTaken;
 
+        if (GAMEPLAY.needLifeReward > 0) {
+            this.updateEssentialLife(GAMEPLAY.needLifeReward);
+        }
+
         this.updateBalance(GAMEPLAY.needCost);
         this.eventFeed.push(`Need ${label}`, 'good');
 
@@ -586,6 +629,7 @@ export class MainScene extends Phaser.Scene {
             needsTaken: this.needsTaken,
             wantsAvoided: this.wantsAvoided,
             bossAvoided: this.bossAvoided,
+            essentialLife: this.essentialLife,
         });
 
         const cx = this.scale.width / 2;
@@ -623,7 +667,7 @@ export class MainScene extends Phaser.Scene {
             }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
         }
 
-        this.add.text(cx, cy + 20, `NEEDS: ${this.needsTaken} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`, {
+        this.add.text(cx, cy + 20, `NEEDS: ${this.needsTaken} | LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`, {
             fontSize: '16px',
             color: '#FFF1C7',
             fontFamily: 'monospace',
@@ -720,6 +764,8 @@ export class MainScene extends Phaser.Scene {
 
                     if (entity.isNeed) {
                         this.updateBalance(GAMEPLAY.missedNeedPenalty);
+                        this.updateEssentialLife(-GAMEPLAY.missedNeedLifePenalty);
+                        this.scorePoints += GAMEPLAY.pointsPerMissedNeedPenalty;
                         this.eventFeed.push(`Missed ${label}`, 'bad');
                         this.cameras.main.shake(100, 0.01);
                     } else if (entity.kind === 'want') {
