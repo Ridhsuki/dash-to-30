@@ -22,8 +22,11 @@ export class FinancialParallaxBackground {
 
   private currentPhase: MonthPhase = 'young';
 
-  private sky!: Phaser.GameObjects.Image;
+  private skyBack!: Phaser.GameObjects.Image;
+  private skyFront!: Phaser.GameObjects.Image;
   private glow!: Phaser.GameObjects.Ellipse;
+  private currentSkyKey = PHASE_THEME.young.skyKey;
+  private skyTween?: Phaser.Tweens.Tween;
   private farCity!: Phaser.GameObjects.TileSprite;
   private midCity!: Phaser.GameObjects.TileSprite;
   private road!: Phaser.GameObjects.TileSprite;
@@ -53,10 +56,18 @@ export class FinancialParallaxBackground {
     this.scene.cameras.main.roundPixels = true;
     this.ensureTextures();
 
-    this.sky = this.scene.add
-      .image(width / 2, height / 2, PHASE_THEME.young.skyKey)
+    this.currentSkyKey = PHASE_THEME.young.skyKey;
+
+    this.skyBack = this.scene.add
+      .image(width / 2, height / 2, this.currentSkyKey)
       .setDisplaySize(width, height)
-      .setDepth(DEPTH.sky);
+      .setDepth(DEPTH.skyBack);
+
+    this.skyFront = this.scene.add
+      .image(width / 2, height / 2, this.currentSkyKey)
+      .setDisplaySize(width, height)
+      .setAlpha(0)
+      .setDepth(DEPTH.skyFront);
 
     this.glow = this.scene.add
       .ellipse(width * 0.74, height * 0.24, 260, 260, GAME_RGB.gold, 0.2)
@@ -150,12 +161,35 @@ export class FinancialParallaxBackground {
     sprite.tilePositionX = Math.round(this.scroll[key]);
   }
 
+  private crossfadeSky(nextSkyKey: string) {
+    if (nextSkyKey === this.currentSkyKey) return;
+
+    this.skyTween?.stop();
+
+    this.skyFront
+      .setTexture(nextSkyKey)
+      .setAlpha(0)
+      .setVisible(true);
+
+    this.skyTween = this.scene.tweens.add({
+      targets: this.skyFront,
+      alpha: 1,
+      duration: 1200,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        this.skyBack.setTexture(nextSkyKey);
+        this.skyFront.setAlpha(0);
+        this.currentSkyKey = nextSkyKey;
+      },
+    });
+  }
+
   private transitionTo(phase: MonthPhase) {
     this.currentPhase = phase;
 
     const theme = PHASE_THEME[phase];
 
-    this.sky.setTexture(theme.skyKey);
+    this.crossfadeSky(theme.skyKey);
 
     this.scene.tweens.killTweensOf(this.phaseLabel);
 

@@ -1,4 +1,4 @@
-import { Scene } from 'phaser';
+import Phaser from 'phaser';
 
 import { EventBus } from '../EventBus';
 import { FinancialParallaxBackground } from '../background/FinancialParallaxBackground';
@@ -23,10 +23,12 @@ type GameEntitySprite = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody & {
     fullLabel?: string;
 };
 
-export class MainScene extends Scene {
+export class MainScene extends Phaser.Scene {
     player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     isSliding: boolean = false;
+    lastGroundedAt: number = 0;
+    lastJumpPressedAt: number = 0;
     emitter!: Phaser.GameObjects.Particles.ParticleEmitter;
     background!: FinancialParallaxBackground;
 
@@ -56,6 +58,8 @@ export class MainScene extends Scene {
         this.balance = 2000;
         this.day = 1;
         this.isSliding = false;
+        this.lastGroundedAt = 0;
+        this.lastJumpPressedAt = 0;
 
         let storedConfig: unknown = null;
 
@@ -75,6 +79,51 @@ export class MainScene extends Scene {
         createCoreGameTextures(this);
     }
 
+    private createPlayerAnimations() {
+        if (this.anims.exists('player-run')) {
+            this.anims.remove('player-run');
+        }
+
+        this.anims.create({
+            key: 'player-run',
+            frames: [
+                { key: 'player_run_1' },
+                { key: 'player_run_2' },
+            ],
+            frameRate: 8,
+            repeat: -1,
+        });
+    }
+    private isPlayerGrounded() {
+        const body = this.player.body;
+
+        return Boolean(body?.blocked.down || body?.touching.down);
+    }
+
+    private setPlayerRunState() {
+        this.isSliding = false;
+        this.player.setTexture('player_run_1');
+        this.player.body?.setSize(26, 38);
+        this.player.body?.setOffset(11, 9);
+        this.player.setGravityY(1500);
+    }
+
+    private setPlayerJumpState() {
+        this.isSliding = false;
+        this.player.setTexture('player_jump');
+        this.player.body?.setSize(26, 38);
+        this.player.body?.setOffset(11, 9);
+        this.player.setGravityY(1500);
+    }
+
+    private setPlayerSlideState() {
+        this.isSliding = true;
+        this.player.setTexture('player_slide');
+        this.player.body?.setSize(34, 20);
+        this.player.body?.setOffset(7, 27);
+        this.player.setGravityY(3500);
+    }
+
     create() {
         this.cameras.main.setBackgroundColor('#DFF4FF');
         this.cameras.main.roundPixels = true;
@@ -86,15 +135,20 @@ export class MainScene extends Scene {
         this.background = new FinancialParallaxBackground(this);
         this.background.create(width, height, floorY);
 
-        this.player = this.physics.add.sprite(100, floorY - 21, 'player');
+        this.createPlayerAnimations();
+
+        this.player = this.physics.add.sprite(100, floorY - 26, 'player_run_1');
         this.player
-            .setDepth(DEPTH.gameplay + 2)
+            .setDepth(DEPTH.player)
             .setCollideWorldBounds(true)
             .setGravityY(1500);
 
-        this.player.body.setSize(24, 34);
-        this.player.body.setOffset(6, 6);
+        this.player.body.setSize(26, 38);
+        this.player.body.setOffset(11, 9);
+
         this.physics.world.setBounds(0, 0, width + 220, floorY);
+
+        this.player.anims.play('player-run', true);
 
         this.emitter = this.add.particles(0, 0, 'particle', {
             speed: { min: -100, max: -50 },
@@ -104,9 +158,15 @@ export class MainScene extends Scene {
             gravityY: 200,
             frequency: 100
         });
-        this.emitter.startFollow(this.player, -14, 16);
+        this.emitter.startFollow(this.player, -18, 20);
 
         if (this.input.keyboard) {
+            this.input.keyboard.addCapture([
+                Phaser.Input.Keyboard.KeyCodes.SPACE,
+                Phaser.Input.Keyboard.KeyCodes.UP,
+                Phaser.Input.Keyboard.KeyCodes.DOWN,
+            ]);
+
             this.cursors = this.input.keyboard.createCursorKeys();
         }
 
@@ -132,7 +192,7 @@ export class MainScene extends Scene {
             padding: { x: 10, y: 5 },
             fontFamily: 'monospace',
             fontStyle: 'bold'
-        }).setScrollFactor(0).setDepth(30);
+        }).setScrollFactor(0).setDepth(DEPTH.hud);
 
         this.dayText = this.add.text(width - 20, 20, `DAY: ${this.day}/30`, {
             fontSize: '24px',
@@ -141,7 +201,7 @@ export class MainScene extends Scene {
             padding: { x: 10, y: 5 },
             fontFamily: 'monospace',
             fontStyle: 'bold'
-        }).setOrigin(1, 0).setScrollFactor(0).setDepth(30);
+        }).setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud);
 
         this.incomingNotice = new IncomingNotice(this, width);
         this.physics.add.overlap(this.player, this.obstacleGroup, this.hitWant, undefined, this);
@@ -232,14 +292,14 @@ export class MainScene extends Scene {
             }
         }
 
-        let spawnY = floorY - 16;
+        let spawnY = floorY - 24;
 
         if ((isWant || isBoss) && Math.random() > 0.5) {
-            spawnY = isBoss ? floorY - 80 : floorY - 65;
+            spawnY = isBoss ? floorY - 88 : floorY - 72;
         }
 
-        if (isBoss && spawnY === floorY - 16) {
-            spawnY = floorY - 32;
+        if (isBoss && spawnY === floorY - 24) {
+            spawnY = floorY - 39;
         }
 
         const targetGroup =
@@ -264,11 +324,11 @@ export class MainScene extends Scene {
         sprite.body.setAllowGravity(false);
         sprite.body.setImmovable(true);
         sprite.body.setVelocityX(velocityX);
-        sprite.body.setSize(isBoss ? 52 : 30, isBoss ? 52 : 30);
-        sprite.body.setOffset(isBoss ? 10 : 6, isBoss ? 6 : 6);
+        sprite.body.setSize(isBoss ? 58 : 34, isBoss ? 58 : 34);
+        sprite.body.setOffset(isBoss ? 10 : 7, isBoss ? 10 : 7);
 
         const labelData = compactEntityLabel(rawWord, kind);
-        const labelOffsetY = isBoss ? 62 : 46;
+        const labelOffsetY = isBoss ? 72 : 54;
 
         sprite.label = new EntityLabel(
             this,
@@ -395,7 +455,8 @@ export class MainScene extends Scene {
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
         retryBtn.on('pointerdown', () => {
-            this.scene.restart();
+            this.scene.stop('MainScene');
+            this.scene.start('MainScene');
         });
     }
 
@@ -405,34 +466,57 @@ export class MainScene extends Scene {
         this.background.update(this.day, this.isBossStage);
 
         if (this.cursors) {
-            const isGrounded = this.player.body?.blocked.down;
+            const now = this.time.now;
+            const isGrounded = this.isPlayerGrounded();
 
-            if ((this.cursors.space.isDown || this.cursors.up.isDown) && isGrounded && !this.isSliding) {
-                this.player.setVelocityY(-700);
-                this.player.setScale(0.8, 1.2);
-                this.emitter.stop();
-            } else if (isGrounded && !this.isSliding) {
-                this.player.setScale(1, 1);
-                if (!this.emitter.on) this.emitter.start();
+            if (isGrounded) {
+                this.lastGroundedAt = now;
             }
 
-            if (this.cursors.down.isDown) {
+            const jumpJustPressed =
+                Boolean(this.cursors.space && Phaser.Input.Keyboard.JustDown(this.cursors.space)) ||
+                Boolean(this.cursors.up && Phaser.Input.Keyboard.JustDown(this.cursors.up));
+
+            if (jumpJustPressed) {
+                this.lastJumpPressedAt = now;
+            }
+
+            const canUseBufferedJump =
+                now - this.lastJumpPressedAt <= 140 &&
+                now - this.lastGroundedAt <= 120 &&
+                !this.isSliding;
+
+            const wantsToSlide = Boolean(this.cursors.down?.isDown);
+
+            if (canUseBufferedJump) {
+                this.player.setVelocityY(-720);
+                this.setPlayerJumpState();
+                this.lastJumpPressedAt = 0;
+                this.lastGroundedAt = 0;
+                this.emitter.stop();
+            } else if (wantsToSlide && isGrounded) {
                 if (!this.isSliding) {
-                    this.isSliding = true;
-                    this.player.setScale(1, 0.5);
-                    this.player.body?.setSize(32, 16);
-                    this.player.body?.setOffset(0, 16);
-                    this.player.setGravityY(3500);
+                    this.setPlayerSlideState();
+                    this.emitter.stop();
                 }
             } else if (this.isSliding) {
-                this.isSliding = false;
-                this.player.setScale(1, 1);
-                this.player.body?.setSize(24, 34);
-                this.player.body?.setOffset(6, 6);
-                this.player.setGravityY(1500);
+                this.setPlayerRunState();
 
                 if (isGrounded) {
-                    this.player.y -= 16;
+                    this.player.y -= 6;
+                }
+            }
+
+            if (!this.isSliding) {
+                if (!isGrounded) {
+                    this.setPlayerJumpState();
+                    this.emitter.stop();
+                } else {
+                    this.player.anims.play('player-run', true);
+
+                    if (!this.emitter.on) {
+                        this.emitter.start();
+                    }
                 }
             }
         }

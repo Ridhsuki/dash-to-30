@@ -1,4 +1,6 @@
 export const DEPTH = {
+  skyBack: -52,
+  skyFront: -51,
   sky: -50,
   glow: -45,
   cloudsBack: -40,
@@ -9,7 +11,9 @@ export const DEPTH = {
   road: -8,
   roadDecor: -7,
   gameplay: 14,
+  player: 18,
   gameplayLabel: 28,
+  phaseLabel: 32,
   hud: 40,
   overlay: 80,
 } as const;
