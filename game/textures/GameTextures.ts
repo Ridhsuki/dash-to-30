@@ -33,14 +33,16 @@ function drawShoe(graphics: Phaser.GameObjects.Graphics, x: number, y: number) {
 }
 
 function drawFace(graphics: Phaser.GameObjects.Graphics, eyeY: number) {
-  graphics.fillStyle(0xffffff, 0.95);
-  graphics.fillRect(18, eyeY, 4, 4);
-  graphics.fillRect(28, eyeY, 4, 4);
+  // Eyes dibuat simetris agar tidak terlihat satu kotak dan satu memanjang.
+  graphics.fillStyle(0xffffff, 0.96);
+  graphics.fillRoundedRect(17, eyeY, 5, 5, 1);
+  graphics.fillRoundedRect(27, eyeY, 5, 5, 1);
 
   graphics.fillStyle(GAME_RGB.text, 1);
-  graphics.fillRect(19, eyeY + 1, 2, 2);
-  graphics.fillRect(29, eyeY + 1, 2, 2);
+  graphics.fillRect(19, eyeY + 2, 2, 2);
+  graphics.fillRect(29, eyeY + 2, 2, 2);
 
+  // Mouth kecil dan rata di tengah.
   graphics.fillStyle(GAME_RGB.text, 0.75);
   graphics.fillRect(22, eyeY + 10, 8, 2);
 }

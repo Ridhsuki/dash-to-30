@@ -2,9 +2,11 @@ import Phaser from 'phaser';
 
 import { EventBus } from '../EventBus';
 import { FinancialParallaxBackground } from '../background/FinancialParallaxBackground';
+import { GAMEPLAY, LANES } from '../config/gameplay';
 import { DEPTH } from '../constants/layers';
 import { createCoreGameTextures } from '../textures/GameTextures';
 import { EntityLabel } from '../ui/EntityLabel';
+import { EventFeed } from '../ui/EventFeed';
 import { IncomingNotice } from '../ui/IncomingNotice';
 import {
     compactEntityLabel,
@@ -18,6 +20,8 @@ type GameEntitySprite = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody & {
     label?: EntityLabel;
     isNeed?: boolean;
     isBoss?: boolean;
+    isInitialPayday?: boolean;
+    isDuckLane?: boolean;
     kind?: EntityKind;
     labelOffsetY?: number;
     fullLabel?: string;
@@ -26,17 +30,10 @@ type GameEntitySprite = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody & {
 export class MainScene extends Phaser.Scene {
     player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-    isSliding: boolean = false;
-    lastGroundedAt: number = 0;
-    lastJumpPressedAt: number = 0;
     emitter!: Phaser.GameObjects.Particles.ParticleEmitter;
     background!: FinancialParallaxBackground;
-
-    balance: number = 2000;
-    day: number = 1;
-    aiConfig: GameAiConfig = normalizeAiConfig(null);
     incomingNotice!: IncomingNotice;
-    isBossStage: boolean = false;
+    eventFeed!: EventFeed;
 
     obstacleGroup!: Phaser.Physics.Arcade.Group;
     itemGroup!: Phaser.Physics.Arcade.Group;
@@ -44,9 +41,30 @@ export class MainScene extends Phaser.Scene {
 
     balanceText!: Phaser.GameObjects.Text;
     dayText!: Phaser.GameObjects.Text;
+
     spawnTimer!: Phaser.Time.TimerEvent;
     dayTimer!: Phaser.Time.TimerEvent;
+
+    balance: number = GAMEPLAY.startingBalance;
+    day: number = 1;
+    aiConfig: GameAiConfig = normalizeAiConfig(null);
+
+    isSliding: boolean = false;
+    isBossStage: boolean = false;
     isGameOver: boolean = false;
+
+    lastGroundedAt: number = 0;
+    lastJumpPressedAt: number = 0;
+    slideStartedAt: number = 0;
+
+    scorePoints: number = 0;
+    needsTaken: number = 0;
+    wantsAvoided: number = 0;
+    bossAvoided: number = 0;
+
+    hasCollectedInitialPayday: boolean = false;
+    controlsLocked: boolean = true;
+    gameSpeedMultiplier: number = 1;
 
     constructor() {
         super('MainScene');
@@ -55,16 +73,29 @@ export class MainScene extends Phaser.Scene {
     init() {
         this.isGameOver = false;
         this.isBossStage = false;
-        this.balance = 2000;
-        this.day = 1;
         this.isSliding = false;
+
+        this.balance = GAMEPLAY.startingBalance;
+        this.day = 1;
+
+        this.scorePoints = 0;
+        this.needsTaken = 0;
+        this.wantsAvoided = 0;
+        this.bossAvoided = 0;
+
+        this.hasCollectedInitialPayday = false;
+        this.controlsLocked = true;
+        this.gameSpeedMultiplier = 1;
+
         this.lastGroundedAt = 0;
         this.lastJumpPressedAt = 0;
+        this.slideStartedAt = 0;
 
         let storedConfig: unknown = null;
 
         try {
             const stored = localStorage.getItem('dashTo30_aiConfig');
+
             if (stored) {
                 storedConfig = JSON.parse(stored);
             }
@@ -94,6 +125,7 @@ export class MainScene extends Phaser.Scene {
             repeat: -1,
         });
     }
+
     private isPlayerGrounded() {
         const body = this.player.body;
 
@@ -102,26 +134,52 @@ export class MainScene extends Phaser.Scene {
 
     private setPlayerRunState() {
         this.isSliding = false;
-        this.player.setTexture('player_run_1');
-        this.player.body?.setSize(26, 38);
-        this.player.body?.setOffset(11, 9);
+        this.player.body?.setSize(27, 39);
+        this.player.body?.setOffset(10, 9);
         this.player.setGravityY(1500);
     }
 
     private setPlayerJumpState() {
         this.isSliding = false;
+        this.player.anims.stop();
         this.player.setTexture('player_jump');
-        this.player.body?.setSize(26, 38);
-        this.player.body?.setOffset(11, 9);
+        this.player.body?.setSize(27, 39);
+        this.player.body?.setOffset(10, 9);
         this.player.setGravityY(1500);
     }
 
     private setPlayerSlideState() {
         this.isSliding = true;
+        this.slideStartedAt = this.time.now;
+        this.player.anims.stop();
         this.player.setTexture('player_slide');
-        this.player.body?.setSize(34, 20);
-        this.player.body?.setOffset(7, 27);
-        this.player.setGravityY(3500);
+
+        // Hitbox slide dibuat lebih rendah dan pendek agar duck lane bisa dilewati konsisten.
+        this.player.body?.setSize(36, 16);
+        this.player.body?.setOffset(6, 32);
+        this.player.setGravityY(2200);
+    }
+
+    private createSpawnTimer(delay: number) {
+        if (this.spawnTimer) {
+            this.spawnTimer.remove(false);
+        }
+
+        this.spawnTimer = this.time.addEvent({
+            delay,
+            callback: this.spawnEntity,
+            callbackScope: this,
+            loop: true,
+        });
+    }
+
+    private getFinalScore() {
+        const balanceBonus = Math.max(
+            0,
+            Math.floor(this.balance / GAMEPLAY.remainingBalanceDivisor),
+        );
+
+        return Math.max(0, this.scorePoints + balanceBonus);
     }
 
     create() {
@@ -137,14 +195,15 @@ export class MainScene extends Phaser.Scene {
 
         this.createPlayerAnimations();
 
-        this.player = this.physics.add.sprite(100, floorY - 26, 'player_run_1');
+        this.player = this.physics.add.sprite(100, floorY - 28, 'player_run_1');
         this.player
             .setDepth(DEPTH.player)
             .setCollideWorldBounds(true)
-            .setGravityY(1500);
+            .setGravityY(1500)
+            .setScale(1.08);
 
-        this.player.body.setSize(26, 38);
-        this.player.body.setOffset(11, 9);
+        this.player.body.setSize(27, 39);
+        this.player.body.setOffset(10, 9);
 
         this.physics.world.setBounds(0, 0, width + 220, floorY);
 
@@ -156,8 +215,9 @@ export class MainScene extends Phaser.Scene {
             scale: { start: 1, end: 0 },
             lifespan: 400,
             gravityY: 200,
-            frequency: 100
+            frequency: 100,
         });
+
         this.emitter.startFollow(this.player, -18, 20);
 
         if (this.input.keyboard) {
@@ -191,123 +251,175 @@ export class MainScene extends Phaser.Scene {
             backgroundColor: '#FFF1C7',
             padding: { x: 10, y: 5 },
             fontFamily: 'monospace',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
         }).setScrollFactor(0).setDepth(DEPTH.hud);
 
-        this.dayText = this.add.text(width - 20, 20, `DAY: ${this.day}/30`, {
+        this.dayText = this.add.text(width - 20, 20, `DAY: ${this.day}/${GAMEPLAY.maxDay}`, {
             fontSize: '24px',
             color: '#FFF6E8',
             backgroundColor: '#8B5E3C',
             padding: { x: 10, y: 5 },
             fontFamily: 'monospace',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
         }).setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud);
 
         this.incomingNotice = new IncomingNotice(this, width);
+        this.eventFeed = new EventFeed(this, width, height);
+
+        this.eventFeed.push('Start from $0', 'warning');
+        this.eventFeed.push('Grab payday first', 'info');
+
         this.physics.add.overlap(this.player, this.obstacleGroup, this.hitWant, undefined, this);
         this.physics.add.overlap(this.player, this.itemGroup, this.hitNeed, undefined, this);
         this.physics.add.overlap(this.player, this.paydayGroup, this.hitPayday, undefined, this);
 
-        this.spawnTimer = this.time.addEvent({
-            delay: 1650,
-            callback: this.spawnEntity,
-            callbackScope: this,
-            loop: true,
-        });
+        this.createSpawnTimer(GAMEPLAY.baseSpawnDelayMs);
 
-        this.time.delayedCall(500, () => {
+        this.time.delayedCall(450, () => {
             if (!this.isGameOver) {
-                this.spawnEntity();
+                this.spawnInitialPayday();
             }
         });
 
         this.dayTimer = this.time.addEvent({
-            delay: 1500,
+            delay: GAMEPLAY.dayDurationMs,
             callback: this.increaseDay,
             callbackScope: this,
-            loop: true
+            loop: true,
         });
 
         EventBus.emit('current-scene-ready', this);
     }
 
+    private spawnInitialPayday() {
+        const floorY = this.scale.height - 32;
+
+        const sprite = this.paydayGroup.create(
+            220,
+            floorY - LANES.groundOffsetY,
+            'tex_payday',
+        ) as GameEntitySprite;
+
+        sprite
+            .setDepth(DEPTH.gameplay)
+            .setActive(true)
+            .setVisible(true)
+            .setOrigin(0.5, 0.5);
+
+        sprite.body.setAllowGravity(false);
+        sprite.body.setImmovable(true);
+        sprite.body.setVelocityX(-90);
+        sprite.body.setSize(34, 34);
+        sprite.body.setOffset(7, 7);
+
+        const labelData = compactEntityLabel('Payday', 'payday');
+
+        sprite.label = new EntityLabel(
+            this,
+            sprite.x,
+            sprite.y - 54,
+            labelData.shortLabel,
+            'payday',
+        );
+
+        sprite.kind = 'payday';
+        sprite.labelOffsetY = 54;
+        sprite.fullLabel = labelData.fullLabel;
+        sprite.isInitialPayday = true;
+
+        this.incomingNotice.show('First Payday', 'payday');
+        this.eventFeed.push('Incoming payday', 'good');
+    }
+
     increaseDay() {
         if (this.isGameOver) return;
-        this.day += 1;
-        this.dayText.setText(`DAY: ${this.day}/30`);
 
-        // Memicu Boss Stage di Hari 28
-        if (this.day === 28 && !this.isBossStage) {
+        this.day += 1;
+        this.dayText.setText(`DAY: ${this.day}/${GAMEPLAY.maxDay}`);
+
+        this.scorePoints += GAMEPLAY.pointsPerSurvivedDay;
+
+        if (this.day === GAMEPLAY.bossStartDay && !this.isBossStage) {
             this.isBossStage = true;
-            this.cameras.main.flash(1000, 255, 100, 100);
+            this.gameSpeedMultiplier = 1.28;
+            this.cameras.main.flash(800, 255, 180, 90);
             this.background.pulseCrisis();
-            this.spawnTimer.timeScale = 1.5; // Spawn lebih cepat
+            this.createSpawnTimer(GAMEPLAY.crisisSpawnDelayMs);
+            this.eventFeed.push('Crisis phase!', 'warning');
         }
 
-        if (this.day >= 30) {
+        if (this.day === GAMEPLAY.finalBossDay) {
+            this.gameSpeedMultiplier = 1.48;
+            this.cameras.main.flash(1000, 255, 100, 100);
+            this.background.pulseCrisis();
+            this.createSpawnTimer(GAMEPLAY.bossSpawnDelayMs);
+            this.eventFeed.push('Final boss pressure!', 'bad');
+        }
+
+        if (this.day >= GAMEPLAY.maxDay) {
             this.triggerGameOver(true);
         }
     }
 
     spawnEntity() {
-        if (this.isGameOver) return;
+        if (this.isGameOver || !this.hasCollectedInitialPayday) return;
 
         const width = this.scale.width;
         const floorY = this.scale.height - 32;
 
         let isWant = false;
         let isNeed = false;
-        let isPayday = false;
         let isBoss = false;
 
         let rawWord = '';
         let tex = '';
-        let velocityX = -250;
+        let velocityX: number = GAMEPLAY.baseObstacleSpeed;
         let kind: EntityKind = 'want';
 
-        if (this.isBossStage) {
+        if (this.isBossStage && Math.random() < 0.35) {
             isBoss = true;
             kind = 'boss';
             rawWord = 'Tax Audit';
             tex = 'tex_boss';
-            velocityX = -350;
+            velocityX = GAMEPLAY.bossObstacleSpeed;
         } else {
             const rand = Math.random();
 
-            if (rand < 0.5) {
+            if (rand < 0.62) {
                 isWant = true;
                 kind = 'want';
                 rawWord = pickRandomLabel(this.aiConfig.wants, 'Debt');
                 tex = 'tex_want';
-            } else if (rand < 0.8) {
+            } else {
                 isNeed = true;
                 kind = 'need';
                 rawWord = pickRandomLabel(this.aiConfig.needs, 'Bill');
                 tex = 'tex_need';
-            } else {
-                isPayday = true;
-                kind = 'payday';
-                rawWord = 'Payday';
-                tex = 'tex_payday';
             }
         }
 
-        let spawnY = floorY - 24;
-
-        if ((isWant || isBoss) && Math.random() > 0.5) {
-            spawnY = isBoss ? floorY - 88 : floorY - 72;
+        if (!isBoss && this.day >= GAMEPLAY.bossStartDay) {
+            velocityX = GAMEPLAY.crisisObstacleSpeed;
         }
 
-        if (isBoss && spawnY === floorY - 24) {
-            spawnY = floorY - 39;
+        velocityX = Math.round(velocityX * this.gameSpeedMultiplier);
+
+        let spawnY = floorY - LANES.groundOffsetY;
+
+        const shouldUseDuckLane = isWant && Math.random() < 0.42;
+
+        if (shouldUseDuckLane) {
+            spawnY = floorY - LANES.duckOffsetY;
+        }
+
+        if (isBoss) {
+            spawnY = floorY - LANES.bossOffsetY;
         }
 
         const targetGroup =
             isWant || isBoss
                 ? this.obstacleGroup
-                : isNeed
-                    ? this.itemGroup
-                    : this.paydayGroup;
+                : this.itemGroup;
 
         const sprite = targetGroup.create(
             width + 44,
@@ -324,11 +436,25 @@ export class MainScene extends Phaser.Scene {
         sprite.body.setAllowGravity(false);
         sprite.body.setImmovable(true);
         sprite.body.setVelocityX(velocityX);
-        sprite.body.setSize(isBoss ? 58 : 34, isBoss ? 58 : 34);
-        sprite.body.setOffset(isBoss ? 10 : 7, isBoss ? 10 : 7);
+
+        if (isBoss) {
+            // Boss-lane obstacle: harus kena player normal, tetapi bisa dilewati saat slide.
+            sprite.body.setSize(58, 58);
+            sprite.body.setOffset(10, 10);
+        } else if (shouldUseDuckLane) {
+            // Duck-lane obstacle: visual tetap 48x48, tetapi hitbox dibuat tinggi.
+            // Player normal akan kena, player slide dengan hitbox rendah dapat lewat.
+            sprite.body.setSize(36, 50);
+            sprite.body.setOffset(6, -2);
+        } else {
+            sprite.body.setSize(34, 34);
+            sprite.body.setOffset(7, 7);
+        }
+
+        sprite.isDuckLane = shouldUseDuckLane;
 
         const labelData = compactEntityLabel(rawWord, kind);
-        const labelOffsetY = isBoss ? 72 : 54;
+        const labelOffsetY = isBoss ? 72 : shouldUseDuckLane ? 62 : 54;
 
         sprite.label = new EntityLabel(
             this,
@@ -345,6 +471,7 @@ export class MainScene extends Phaser.Scene {
         sprite.fullLabel = labelData.fullLabel;
 
         this.incomingNotice.show(labelData.fullLabel, kind);
+
         const isDev =
             typeof process !== 'undefined' &&
             process.env?.NODE_ENV !== 'production';
@@ -362,26 +489,55 @@ export class MainScene extends Phaser.Scene {
         }
     }
 
-    hitWant(player: any, want: any) {
-        const isBoss = want.isBoss;
+    hitWant(_playerObject: unknown, wantObject: unknown) {
+        const want = wantObject as GameEntitySprite;
+        const isBoss = Boolean(want.isBoss);
+        const label = want.fullLabel || (isBoss ? 'Boss' : 'Want');
+
         this.destroyEntity(want);
 
-        // Boss hit mengurangi jauh lebih besar
-        this.updateBalance(isBoss ? -800 : -300);
+        this.updateBalance(isBoss ? GAMEPLAY.bossDamage : GAMEPLAY.wantDamage);
+        this.eventFeed.push(`Hit ${label}`, 'bad');
+
         this.cameras.main.shake(isBoss ? 250 : 150, 0.02);
     }
 
-    hitNeed(player: any, need: any) {
+    hitNeed(_playerObject: unknown, needObject: unknown) {
+        const need = needObject as GameEntitySprite;
+        const label = need.fullLabel || 'Need';
+
         need.isNeed = false;
         this.destroyEntity(need);
-        this.updateBalance(-50);
+
+        this.needsTaken += 1;
+        this.scorePoints += GAMEPLAY.pointsPerNeedTaken;
+
+        this.updateBalance(GAMEPLAY.needCost);
+        this.eventFeed.push(`Need ${label}`, 'good');
+
         this.player.setTint(0xffffff);
         this.time.delayedCall(150, () => this.player.clearTint());
     }
 
-    hitPayday(player: any, payday: any) {
+    hitPayday(_playerObject: unknown, paydayObject: unknown) {
+        const payday = paydayObject as GameEntitySprite;
+
         this.destroyEntity(payday);
-        this.updateBalance(500);
+
+        const amount = payday.isInitialPayday
+            ? GAMEPLAY.initialPaydayAmount
+            : 500;
+
+        this.updateBalance(amount);
+
+        if (payday.isInitialPayday) {
+            this.hasCollectedInitialPayday = true;
+            this.controlsLocked = false;
+            this.eventFeed.push(`Payday +$${amount}`, 'good');
+        } else {
+            this.eventFeed.push(`Bonus +$${amount}`, 'good');
+        }
+
         this.player.setTint(0x6FD08C);
         this.time.delayedCall(150, () => this.player.clearTint());
     }
@@ -390,12 +546,13 @@ export class MainScene extends Phaser.Scene {
         this.balance += amount;
         this.balanceText.setText(`BALANCE: $${this.balance}`);
 
-        if (this.balance <= 0) {
+        if (this.balance <= 0 && this.hasCollectedInitialPayday) {
             this.balanceText.setColor('#FF6B6B');
             this.triggerGameOver(false);
-        } else {
-            this.balanceText.setColor('#4A3A2A');
+            return;
         }
+
+        this.balanceText.setColor('#4A3A2A');
     }
 
     destroyEntity(entity: GameEntitySprite) {
@@ -404,55 +561,83 @@ export class MainScene extends Phaser.Scene {
     }
 
     triggerGameOver(isWin: boolean) {
+        if (this.isGameOver) return;
+
         this.isGameOver = true;
         this.physics.pause();
-        this.spawnTimer.remove();
-        this.dayTimer.remove();
+
+        if (this.spawnTimer) {
+            this.spawnTimer.remove(false);
+        }
+
+        if (this.dayTimer) {
+            this.dayTimer.remove(false);
+        }
+
         this.emitter.stop();
 
-        // MENGIRIM SKOR KE REACT & FIRESTORE
-        EventBus.emit('game-over', { score: this.balance, survivalDays: this.day, isWin });
+        const finalScore = this.getFinalScore();
+
+        EventBus.emit('game-over', {
+            score: finalScore,
+            balance: this.balance,
+            survivalDays: this.day,
+            isWin,
+            needsTaken: this.needsTaken,
+            wantsAvoided: this.wantsAvoided,
+            bossAvoided: this.bossAvoided,
+        });
 
         const cx = this.scale.width / 2;
         const cy = this.scale.height / 2;
 
-        this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x4A3A2A, 0.9);
+        this.add
+            .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4A3A2A, 0.9)
+            .setDepth(DEPTH.overlay);
 
         const title = isWin ? 'SURVIVED THE MONTH!' : 'BANKRUPT!';
         const color = isWin ? '#6FD08C' : '#FF6B6B';
 
-        this.add.text(cx, cy - 80, title, {
-            fontSize: '48px',
-            color: color,
+        this.add.text(cx, cy - 90, title, {
+            fontSize: '44px',
+            color,
             fontFamily: 'monospace',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
+            fontStyle: 'bold',
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
 
         if (!isWin) {
-            this.add.text(cx, cy - 20, `AI ROAST: "${this.aiConfig.roast}"`, {
+            this.add.text(cx, cy - 28, `AI ROAST: "${this.aiConfig.roast}"`, {
                 fontSize: '16px',
                 color: '#FFF1C7',
                 fontFamily: 'monospace',
                 align: 'center',
-                wordWrap: { width: 600, useAdvancedWrap: true }
-            }).setOrigin(0.5);
+                wordWrap: { width: 600, useAdvancedWrap: true },
+            }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
         } else {
-            this.add.text(cx, cy - 20, `FINAL SAVINGS: $${this.balance}`, {
-                fontSize: '24px',
+            this.add.text(cx, cy - 28, `FINAL SCORE: ${finalScore} | SAVINGS: $${this.balance}`, {
+                fontSize: '22px',
                 color: '#FFF1C7',
-                fontFamily: 'monospace'
-            }).setOrigin(0.5);
+                fontFamily: 'monospace',
+                align: 'center',
+                wordWrap: { width: 640, useAdvancedWrap: true },
+            }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
         }
 
-        // Tombol Try Again
-        const retryBtn = this.add.text(cx, cy + 80, '> TRY AGAIN <', {
+        this.add.text(cx, cy + 20, `NEEDS: ${this.needsTaken} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`, {
+            fontSize: '16px',
+            color: '#FFF1C7',
+            fontFamily: 'monospace',
+            align: 'center',
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
+
+        const retryBtn = this.add.text(cx, cy + 88, '> TRY AGAIN <', {
             fontSize: '24px',
             color: '#FFF6E8',
             backgroundColor: '#8B5E3C',
             padding: { x: 15, y: 10 },
             fontFamily: 'monospace',
-            fontStyle: 'bold'
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+            fontStyle: 'bold',
+        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(DEPTH.overlay + 1);
 
         retryBtn.on('pointerdown', () => {
             this.scene.stop('MainScene');
@@ -465,7 +650,7 @@ export class MainScene extends Phaser.Scene {
 
         this.background.update(this.day, this.isBossStage);
 
-        if (this.cursors) {
+        if (this.cursors && !this.controlsLocked) {
             const now = this.time.now;
             const isGrounded = this.isPlayerGrounded();
 
@@ -473,38 +658,43 @@ export class MainScene extends Phaser.Scene {
                 this.lastGroundedAt = now;
             }
 
+            const wantsToSlide = Boolean(this.cursors.down?.isDown);
             const jumpJustPressed =
                 Boolean(this.cursors.space && Phaser.Input.Keyboard.JustDown(this.cursors.space)) ||
                 Boolean(this.cursors.up && Phaser.Input.Keyboard.JustDown(this.cursors.up));
 
-            if (jumpJustPressed) {
+            if (jumpJustPressed && !this.isSliding) {
                 this.lastJumpPressedAt = now;
             }
+
+            const slideMinDurationPassed =
+                now - this.slideStartedAt >= GAMEPLAY.slideMinDurationMs;
 
             const canUseBufferedJump =
                 now - this.lastJumpPressedAt <= 140 &&
                 now - this.lastGroundedAt <= 120 &&
                 !this.isSliding;
 
-            const wantsToSlide = Boolean(this.cursors.down?.isDown);
+            // Slide diprioritaskan selama tombol bawah ditahan.
+            // State ini tidak boleh ditimpa run/jump sebelum tombol dilepas.
+            if (wantsToSlide && (isGrounded || this.isSliding)) {
+                if (!this.isSliding) {
+                    this.setPlayerSlideState();
+                }
 
-            if (canUseBufferedJump) {
+                this.emitter.stop();
+            } else if (this.isSliding && slideMinDurationPassed) {
+                this.setPlayerRunState();
+
+                if (isGrounded) {
+                    this.player.y -= 4;
+                }
+            } else if (canUseBufferedJump) {
                 this.player.setVelocityY(-720);
                 this.setPlayerJumpState();
                 this.lastJumpPressedAt = 0;
                 this.lastGroundedAt = 0;
                 this.emitter.stop();
-            } else if (wantsToSlide && isGrounded) {
-                if (!this.isSliding) {
-                    this.setPlayerSlideState();
-                    this.emitter.stop();
-                }
-            } else if (this.isSliding) {
-                this.setPlayerRunState();
-
-                if (isGrounded) {
-                    this.player.y -= 6;
-                }
             }
 
             if (!this.isSliding) {
@@ -526,9 +716,20 @@ export class MainScene extends Phaser.Scene {
                 const entity = child as GameEntitySprite;
 
                 if (entity.x < -120) {
+                    const label = entity.fullLabel || entity.kind || 'item';
+
                     if (entity.isNeed) {
-                        this.updateBalance(-200);
+                        this.updateBalance(GAMEPLAY.missedNeedPenalty);
+                        this.eventFeed.push(`Missed ${label}`, 'bad');
                         this.cameras.main.shake(100, 0.01);
+                    } else if (entity.kind === 'want') {
+                        this.wantsAvoided += 1;
+                        this.scorePoints += GAMEPLAY.pointsPerWantAvoided;
+                        this.eventFeed.push(`Avoided ${label}`, 'good');
+                    } else if (entity.isBoss) {
+                        this.bossAvoided += 1;
+                        this.scorePoints += GAMEPLAY.pointsPerBossAvoided;
+                        this.eventFeed.push('Dodged boss', 'good');
                     }
 
                     this.destroyEntity(entity);
