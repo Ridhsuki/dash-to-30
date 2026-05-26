@@ -10,7 +10,6 @@ export class MainScene extends Phaser.Scene {
   farLayer!: Phaser.GameObjects.TileSprite;
   emitter!: Phaser.GameObjects.Particles.ParticleEmitter;
 
-  // Phase 4.1 Variables
   balance: number = 1000;
   aiConfig: any = null;
   obstacleGroup!: Phaser.Physics.Arcade.Group;
@@ -24,6 +23,10 @@ export class MainScene extends Phaser.Scene {
   }
 
   init() {
+    this.isGameOver = false;
+    this.balance = 1000;
+    this.isSliding = false;
+    
     try {
       const stored = localStorage.getItem('dashTo30_aiConfig');
       if (stored) {
@@ -44,40 +47,41 @@ export class MainScene extends Phaser.Scene {
 
   preload() {
     const graphics = this.make.graphics({ x: 0, y: 0 });
+    
     graphics.fillStyle(0x8B5E3C, 1);
     graphics.fillRect(0, 0, 32, 32);
     graphics.generateTexture('floor', 32, 32);
 
     graphics.clear();
-    graphics.fillStyle(0x6FD08C, 1);
+    graphics.fillStyle(0x6FD08C, 1); // Player Emerald
     graphics.fillRect(0, 0, 32, 32);
     graphics.generateTexture('player', 32, 32);
 
     graphics.clear();
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillRect(0, 0, 4, 4);
-    graphics.generateTexture('particle', 4, 4);
+    graphics.fillStyle(0x8B5E3C, 1); // Dirt particle
+    graphics.fillRect(0, 0, 6, 6);
+    graphics.generateTexture('particle', 6, 6);
 
     graphics.clear();
-    graphics.fillStyle(0xFF6B6B, 1);
+    graphics.fillStyle(0xFF6B6B, 1); // Want Red
     graphics.fillRect(0, 0, 32, 32);
     graphics.generateTexture('tex_want', 32, 32);
 
     graphics.clear();
-    graphics.fillStyle(0xFFC857, 1);
+    graphics.fillStyle(0xFFC857, 1); // Need Gold
     graphics.fillRect(0, 0, 32, 32);
     graphics.generateTexture('tex_need', 32, 32);
   }
 
   create() {
-    this.cameras.main.setBackgroundColor('#2d2d2d');
+    this.cameras.main.setBackgroundColor('#FFF6E8');
 
     const width = this.scale.width;
     const height = this.scale.height;
     const floorY = height - 32;
 
-    this.farLayer = this.add.tileSprite(width / 2, height / 2 - 20, width, height, 'floor').setTint(0x1a1a1a).setAlpha(0.5);
-    this.midLayer = this.add.tileSprite(width / 2, height / 2 + 30, width, height, 'floor').setTint(0x3a3a3a).setAlpha(0.7);
+    this.farLayer = this.add.tileSprite(width / 2, height / 2 - 20, width, height, 'floor').setTint(0xF0E5D1);
+    this.midLayer = this.add.tileSprite(width / 2, height / 2 + 30, width, height, 'floor').setTint(0xE5D3B8);
     this.floorLayer = this.add.tileSprite(width / 2, floorY + 16, width, 32, 'floor');
 
     this.player = this.physics.add.sprite(100, floorY - 16, 'player');
@@ -89,7 +93,7 @@ export class MainScene extends Phaser.Scene {
         speed: { min: -100, max: -50 },
         angle: { min: 0, max: -90 },
         scale: { start: 1, end: 0 },
-        lifespan: 300,
+        lifespan: 400,
         gravityY: 200,
         frequency: 100
     });
@@ -104,7 +108,9 @@ export class MainScene extends Phaser.Scene {
 
     this.balanceText = this.add.text(20, 20, `BALANCE: $${this.balance}`, {
         fontSize: '24px',
-        color: '#FFC857',
+        color: '#4A3A2A',
+        backgroundColor: '#FFF1C7',
+        padding: { x: 10, y: 5 },
         fontFamily: 'monospace',
         fontStyle: 'bold'
     }).setScrollFactor(0);
@@ -113,7 +119,7 @@ export class MainScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.itemGroup, this.hitNeed, undefined, this);
 
     this.spawnTimer = this.time.addEvent({
-        delay: 1500,
+        delay: 1800,
         callback: this.spawnEntity,
         callbackScope: this,
         loop: true
@@ -140,7 +146,7 @@ export class MainScene extends Phaser.Scene {
       
       let spawnY = floorY - 16; 
       if (isWant && Math.random() > 0.5) {
-          spawnY = floorY - 60;
+          spawnY = floorY - 65; 
       }
 
       const sprite = this.physics.add.sprite(width + 50, spawnY, tex) as Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -150,13 +156,16 @@ export class MainScene extends Phaser.Scene {
           this.itemGroup.add(sprite);
       }
 
-      sprite.setVelocityX(-350);
+      sprite.setVelocityX(-220); // Slower speed
       
-      const textObj = this.add.text(sprite.x, sprite.y - 25, word, {
-          fontSize: '12px',
-          color: '#ffffff',
+      // Comic Bubble Text
+      const textObj = this.add.text(sprite.x, sprite.y - 35, word, {
+          fontSize: '16px',
+          color: '#4A3A2A',
           fontFamily: 'monospace',
-          backgroundColor: '#00000088'
+          fontStyle: 'bold',
+          backgroundColor: '#FFF1C7',
+          padding: { left: 8, right: 8, top: 4, bottom: 4 }
       }).setOrigin(0.5);
 
       (sprite as any).label = textObj;
@@ -181,8 +190,8 @@ export class MainScene extends Phaser.Scene {
 
       this.balance += 100;
       this.updateBalanceText();
-      this.player.setTint(0x6FD08C);
-      this.time.delayedCall(200, () => this.player.clearTint());
+      this.player.setTint(0xffffff); 
+      this.time.delayedCall(150, () => this.player.clearTint());
   }
 
   updateBalanceText() {
@@ -201,21 +210,36 @@ export class MainScene extends Phaser.Scene {
       const cx = this.scale.width / 2;
       const cy = this.scale.height / 2;
 
-      this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.7);
+      this.add.rectangle(cx, cy, this.scale.width, this.scale.height, 0x4A3A2A, 0.85);
       
-      this.add.text(cx, cy - 30, 'BANKRUPT!', {
+      this.add.text(cx, cy - 60, 'BANKRUPT!', {
           fontSize: '48px',
           color: '#FF6B6B',
           fontFamily: 'monospace',
           fontStyle: 'bold'
       }).setOrigin(0.5);
 
-      this.add.text(cx, cy + 30, `ROAST: ${this.aiConfig.roast}`, {
-          fontSize: '14px',
-          color: '#ffffff',
+      this.add.text(cx, cy, `AI ROAST: "${this.aiConfig.roast}"`, {
+          fontSize: '16px',
+          color: '#FFF1C7',
           fontFamily: 'monospace',
+          align: 'center',
           wordWrap: { width: 600, useAdvancedWrap: true }
       }).setOrigin(0.5);
+
+      // Try Again Button
+      const retryBtn = this.add.text(cx, cy + 80, '> TRY AGAIN <', {
+          fontSize: '24px',
+          color: '#FFF6E8',
+          backgroundColor: '#8B5E3C',
+          padding: { x: 15, y: 10 },
+          fontFamily: 'monospace',
+          fontStyle: 'bold'
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+      retryBtn.on('pointerdown', () => {
+          this.scene.restart();
+      });
   }
 
   update() {
@@ -223,11 +247,12 @@ export class MainScene extends Phaser.Scene {
 
     this.farLayer.tilePositionX += 0.5;
     this.midLayer.tilePositionX += 1.5;
-    this.floorLayer.tilePositionX += 4;
+    this.floorLayer.tilePositionX += 3;
 
     if (!this.cursors) return;
 
-    const isGrounded = this.player.body?.touching.down;
+    // Fix jump logic using blocked.down
+    const isGrounded = this.player.body?.blocked.down;
 
     if (this.cursors.space && this.cursors.up) {
       if ((this.cursors.space.isDown || this.cursors.up.isDown) && isGrounded && !this.isSliding) {
@@ -248,7 +273,7 @@ export class MainScene extends Phaser.Scene {
               this.player.setScale(1, 0.5);
               this.player.body?.setSize(32, 16);
               this.player.body?.setOffset(0, 16);
-              this.player.setGravityY(2500); 
+              this.player.setGravityY(3500); // Fall faster
           }
       } else if (this.isSliding) {
           this.isSliding = false;
@@ -269,7 +294,7 @@ export class MainScene extends Phaser.Scene {
                 child.destroy();
             } else if (child.label) {
                 child.label.x = child.x;
-                child.label.y = child.y - 25;
+                child.label.y = child.y - 35;
             }
         });
     };
