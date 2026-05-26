@@ -31,6 +31,8 @@ type GameEntitySprite = Phaser.Types.Physics.Arcade.SpriteWithDynamicBody & {
 export class MainScene extends Phaser.Scene {
     player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
     cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+    pauseKey?: Phaser.Input.Keyboard.Key;
+    escapeKey?: Phaser.Input.Keyboard.Key;
     emitter!: Phaser.GameObjects.Particles.ParticleEmitter;
     background!: FinancialParallaxBackground;
     incomingNotice!: IncomingNotice;
@@ -55,6 +57,8 @@ export class MainScene extends Phaser.Scene {
     isSliding: boolean = false;
     isBossStage: boolean = false;
     isGameOver: boolean = false;
+    isPaused: boolean = false;
+    pauseOverlay?: Phaser.GameObjects.Container;
 
     lastGroundedAt: number = 0;
     lastJumpPressedAt: number = 0;
@@ -79,6 +83,8 @@ export class MainScene extends Phaser.Scene {
         this.isGameOver = false;
         this.isBossStage = false;
         this.isSliding = false;
+        this.isPaused = false;
+        this.pauseOverlay = undefined;
 
         this.balance = GAMEPLAY.startingBalance;
         this.day = 1;
@@ -188,6 +194,214 @@ export class MainScene extends Phaser.Scene {
         return Math.max(0, this.scorePoints + balanceBonus);
     }
 
+    private getPersonalHighScoreKey() {
+        return 'dashTo30_personalHighScore';
+    }
+
+    private resolvePersonalHighScore(finalScore: number) {
+        if (typeof window === 'undefined') {
+            return {
+                previousBest: 0,
+                isNewHighScore: false,
+            };
+        }
+
+        const key = this.getPersonalHighScoreKey();
+        const previousBest = Number(window.localStorage.getItem(key) || 0);
+        const isNewHighScore = finalScore > previousBest;
+
+        if (isNewHighScore) {
+            window.localStorage.setItem(key, String(finalScore));
+        }
+
+        return {
+            previousBest,
+            isNewHighScore,
+        };
+    }
+
+    private createHudButton(x: number, y: number, label: string, onClick: () => void) {
+        const button = this.add.text(x, y, label, {
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            fontStyle: 'bold',
+            color: '#4A3A2A',
+            backgroundColor: '#FFF1C7',
+            padding: { x: 10, y: 6 },
+        })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(DEPTH.hud)
+            .setInteractive({ useHandCursor: true });
+
+        button.on('pointerover', () => button.setScale(1.05));
+        button.on('pointerout', () => button.setScale(1));
+        button.on('pointerdown', onClick);
+
+        return button;
+    }
+
+    private createMenuButton(
+        x: number,
+        y: number,
+        label: string,
+        color: string,
+        backgroundColor: string,
+        onClick: () => void,
+    ) {
+        const button = this.add.text(x, y, label, {
+            fontFamily: 'monospace',
+            fontSize: '18px',
+            fontStyle: 'bold',
+            color,
+            backgroundColor,
+            padding: { x: 16, y: 10 },
+        })
+            .setOrigin(0.5)
+            .setDepth(DEPTH.overlay + 3)
+            .setInteractive({ useHandCursor: true });
+
+        button.on('pointerover', () => button.setScale(1.06));
+        button.on('pointerout', () => button.setScale(1));
+        button.on('pointerdown', onClick);
+
+        return button;
+    }
+
+    private showPauseMenu() {
+        if (this.isPaused || this.isGameOver) return;
+
+        this.isPaused = true;
+        this.physics.pause();
+
+        if (this.spawnTimer) this.spawnTimer.paused = true;
+        if (this.dayTimer) this.dayTimer.paused = true;
+
+        this.emitter.stop();
+
+        const cx = this.scale.width / 2;
+        const cy = this.scale.height / 2;
+
+        const backdrop = this.add
+            .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4A3A2A, 0.72)
+            .setDepth(DEPTH.overlay);
+
+        const panel = this.add
+            .rectangle(cx, cy, 430, 300, 0xFFF6E8, 0.98)
+            .setStrokeStyle(4, 0xFFC857, 1)
+            .setDepth(DEPTH.overlay + 1);
+
+        const title = this.add.text(cx, cy - 105, 'PAUSED', {
+            fontFamily: 'monospace',
+            fontSize: '38px',
+            fontStyle: 'bold',
+            color: '#4A3A2A',
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
+
+        const subtitle = this.add.text(cx, cy - 68, 'Dompet tarik napas dulu.', {
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            color: '#8B5E3C',
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
+
+        const resume = this.createMenuButton(cx, cy - 20, 'RESUME RUN', '#4A3A2A', '#6FD08C', () => this.hidePauseMenu());
+
+        const restart = this.createMenuButton(cx, cy + 32, 'RESTART', '#4A3A2A', '#FFC857', () => {
+            this.scene.stop('MainScene');
+            this.scene.start('MainScene');
+        });
+
+        const quit = this.createMenuButton(cx, cy + 84, 'QUIT TO HOME', '#FFF6E8', '#8B5E3C', () => {
+            EventBus.emit('go-home');
+            this.scene.stop('MainScene');
+
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
+            }
+        });
+
+        this.pauseOverlay = this.add
+            .container(0, 0, [backdrop, panel, title, subtitle, resume, restart, quit])
+            .setDepth(DEPTH.overlay)
+            .setAlpha(0)
+            .setScale(0.94);
+
+        this.tweens.add({
+            targets: this.pauseOverlay,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 180,
+            ease: 'Back.easeOut',
+        });
+    }
+
+    private hidePauseMenu() {
+        if (!this.isPaused) return;
+
+        const overlay = this.pauseOverlay;
+
+        const resumeGame = () => {
+            this.isPaused = false;
+            this.physics.resume();
+
+            if (this.spawnTimer) this.spawnTimer.paused = false;
+            if (this.dayTimer) this.dayTimer.paused = false;
+
+            if (this.isPlayerGrounded()) {
+                this.emitter.start();
+            }
+
+            overlay?.destroy(true);
+            this.pauseOverlay = undefined;
+        };
+
+        if (!overlay) {
+            resumeGame();
+            return;
+        }
+
+        this.tweens.add({
+            targets: overlay,
+            alpha: 0,
+            scaleX: 0.94,
+            scaleY: 0.94,
+            duration: 140,
+            ease: 'Sine.easeInOut',
+            onComplete: resumeGame,
+        });
+    }
+
+    private spawnConfetti() {
+        const colors = [0xFF6B6B, 0xFFC857, 0x6FD08C, 0x9B8CFF, 0xBFEDFF];
+
+        for (let i = 0; i < 44; i += 1) {
+            const piece = this.add
+                .rectangle(
+                    Phaser.Math.Between(80, this.scale.width - 80),
+                    Phaser.Math.Between(-40, 20),
+                    Phaser.Math.Between(4, 8),
+                    Phaser.Math.Between(6, 12),
+                    colors[i % colors.length],
+                    1,
+                )
+                .setDepth(DEPTH.overlay + 4)
+                .setAngle(Phaser.Math.Between(0, 180));
+
+            this.tweens.add({
+                targets: piece,
+                y: Phaser.Math.Between(120, this.scale.height - 40),
+                x: piece.x + Phaser.Math.Between(-80, 80),
+                angle: piece.angle + Phaser.Math.Between(160, 420),
+                alpha: 0,
+                duration: Phaser.Math.Between(1100, 1700),
+                ease: 'Sine.easeOut',
+                onComplete: () => piece.destroy(),
+            });
+        }
+    }
+
+
     private updateEssentialLife(amount: number) {
         this.essentialLife = Phaser.Math.Clamp(
             this.essentialLife + amount,
@@ -251,9 +465,13 @@ export class MainScene extends Phaser.Scene {
                 Phaser.Input.Keyboard.KeyCodes.SPACE,
                 Phaser.Input.Keyboard.KeyCodes.UP,
                 Phaser.Input.Keyboard.KeyCodes.DOWN,
-            ]);
+
+                Phaser.Input.Keyboard.KeyCodes.P,
+                Phaser.Input.Keyboard.KeyCodes.ESC,]);
 
             this.cursors = this.input.keyboard.createCursorKeys();
+            this.pauseKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.P);
+            this.escapeKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
         }
 
         this.obstacleGroup = this.physics.add.group({
@@ -288,6 +506,8 @@ export class MainScene extends Phaser.Scene {
             fontFamily: 'monospace',
             fontStyle: 'bold',
         }).setOrigin(1, 0).setScrollFactor(0).setDepth(DEPTH.hud);
+
+        this.createHudButton(width - 80, 58, 'PAUSE', () => this.showPauseMenu());
 
         this.essentialLifeText = this.add.text(20, 58, `NEEDS LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife}`, {
             fontSize: '16px',
@@ -602,7 +822,6 @@ export class MainScene extends Phaser.Scene {
         entity.label?.destroy();
         entity.destroy();
     }
-
     triggerGameOver(isWin: boolean) {
         if (this.isGameOver) return;
 
@@ -620,6 +839,7 @@ export class MainScene extends Phaser.Scene {
         this.emitter.stop();
 
         const finalScore = this.getFinalScore();
+        const highScore = this.resolvePersonalHighScore(finalScore);
 
         EventBus.emit('game-over', {
             score: finalScore,
@@ -629,68 +849,123 @@ export class MainScene extends Phaser.Scene {
             needsTaken: this.needsTaken,
             wantsAvoided: this.wantsAvoided,
             bossAvoided: this.bossAvoided,
-            essentialLife: this.essentialLife,
+            isNewPersonalHighScore: highScore.isNewHighScore,
+            previousPersonalBest: highScore.previousBest,
         });
 
         const cx = this.scale.width / 2;
         const cy = this.scale.height / 2;
 
         this.add
-            .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4A3A2A, 0.9)
+            .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4A3A2A, 0.78)
             .setDepth(DEPTH.overlay);
 
-        const title = isWin ? 'SURVIVED THE MONTH!' : 'BANKRUPT!';
-        const color = isWin ? '#6FD08C' : '#FF6B6B';
+        const panel = this.add
+            .rectangle(cx, cy, 620, 360, 0xFFF6E8, 0.98)
+            .setStrokeStyle(5, isWin ? 0x6FD08C : 0xFF6B6B, 1)
+            .setDepth(DEPTH.overlay + 1);
 
-        this.add.text(cx, cy - 90, title, {
-            fontSize: '44px',
-            color,
+        const title = isWin ? 'MONTH SURVIVED!' : 'BANKRUPT!';
+        const titleColor = isWin ? '#6FD08C' : '#FF6B6B';
+
+        const titleText = this.add.text(cx, cy - 130, title, {
+            fontSize: '42px',
+            color: titleColor,
             fontFamily: 'monospace',
             fontStyle: 'bold',
-        }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
 
-        if (!isWin) {
-            this.add.text(cx, cy - 28, `AI ROAST: "${this.aiConfig.roast}"`, {
-                fontSize: '16px',
-                color: '#FFF1C7',
-                fontFamily: 'monospace',
-                align: 'center',
-                wordWrap: { width: 600, useAdvancedWrap: true },
-            }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
-        } else {
-            this.add.text(cx, cy - 28, `FINAL SCORE: ${finalScore} | SAVINGS: $${this.balance}`, {
-                fontSize: '22px',
-                color: '#FFF1C7',
-                fontFamily: 'monospace',
-                align: 'center',
-                wordWrap: { width: 640, useAdvancedWrap: true },
-            }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
-        }
+        const highScoreText = highScore.isNewHighScore
+            ? `NEW PERSONAL HIGH SCORE! ${finalScore}`
+            : `SCORE: ${finalScore} | BEST: ${Math.max(highScore.previousBest, finalScore)}`;
 
-        this.add.text(cx, cy + 20, `NEEDS: ${this.needsTaken} | LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`, {
-            fontSize: '16px',
-            color: '#FFF1C7',
+        const scoreText = this.add.text(cx, cy - 84, highScoreText, {
+            fontSize: '18px',
+            color: '#4A3A2A',
+            backgroundColor: '#FFF1C7',
+            padding: { x: 12, y: 6 },
+            fontFamily: 'monospace',
+            fontStyle: 'bold',
+            align: 'center',
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
+
+        this.add.text(cx, cy - 48, 'Login players can submit this score to Global Leaderboard.', {
+            fontSize: '13px',
+            color: '#8B5E3C',
             fontFamily: 'monospace',
             align: 'center',
-        }).setOrigin(0.5).setDepth(DEPTH.overlay + 1);
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
 
-        const retryBtn = this.add.text(cx, cy + 88, '> TRY AGAIN <', {
-            fontSize: '24px',
-            color: '#FFF6E8',
-            backgroundColor: '#8B5E3C',
-            padding: { x: 15, y: 10 },
+        const roastOrCongrats = isWin
+            ? `You balanced wants and needs. Wallet: $${this.balance}`
+            : `AI ROAST: "${this.aiConfig.roast}"`;
+
+        this.add.text(cx, cy - 8, roastOrCongrats, {
+            fontSize: '15px',
+            color: '#4A3A2A',
             fontFamily: 'monospace',
-            fontStyle: 'bold',
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setDepth(DEPTH.overlay + 1);
+            align: 'center',
+            wordWrap: { width: 520, useAdvancedWrap: true },
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
 
-        retryBtn.on('pointerdown', () => {
+        this.add.text(cx, cy + 48, `NEEDS: ${this.needsTaken} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`, {
+            fontSize: '15px',
+            color: '#4A3A2A',
+            fontFamily: 'monospace',
+            align: 'center',
+        }).setOrigin(0.5).setDepth(DEPTH.overlay + 2);
+
+        const retryBtn = this.createMenuButton(cx - 120, cy + 112, 'TRY AGAIN', '#4A3A2A', '#FFC857', () => {
             this.scene.stop('MainScene');
             this.scene.start('MainScene');
         });
+
+        const homeBtn = this.createMenuButton(cx + 120, cy + 112, 'HOME', '#FFF6E8', '#8B5E3C', () => {
+            EventBus.emit('go-home');
+            this.scene.stop('MainScene');
+
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
+            }
+        });
+
+        const endContainer = this.add
+            .container(0, 0, [panel, titleText, scoreText, retryBtn, homeBtn])
+            .setDepth(DEPTH.overlay + 1)
+            .setAlpha(0)
+            .setScale(0.94);
+
+        this.tweens.add({
+            targets: endContainer,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 220,
+            ease: 'Back.easeOut',
+        });
+
+        if (isWin) {
+            this.spawnConfetti();
+        }
     }
+
 
     update() {
         if (this.isGameOver) return;
+
+        const pausePressed =
+            Boolean(this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) ||
+            Boolean(this.escapeKey && Phaser.Input.Keyboard.JustDown(this.escapeKey));
+
+        if (pausePressed) {
+            if (this.isPaused) {
+                this.hidePauseMenu();
+            } else {
+                this.showPauseMenu();
+            }
+        }
+
+        if (this.isPaused) return;
 
         this.background.update(this.day, this.isBossStage);
 

@@ -26,15 +26,15 @@ export class EventFeed {
   private readonly rows: Phaser.GameObjects.Text[] = [];
   private readonly items: FeedItem[] = [];
 
-  constructor(scene: Phaser.Scene, width: number, height: number) {
+  constructor(scene: Phaser.Scene, width: number, _height: number) {
     this.scene = scene;
 
     this.bg = scene.add
-      .rectangle(0, 0, 210, 118, GAME_RGB.cream, 0.9)
+      .rectangle(0, 0, 210, 106, GAME_RGB.cream, 0.9)
       .setStrokeStyle(2, GAME_RGB.gold, 0.9);
 
     this.title = scene.add
-      .text(-94, -52, 'RECENT CASHFLOW', {
+      .text(-94, -46, 'RECENT CASHFLOW', {
         fontFamily: 'monospace',
         fontSize: '9px',
         fontStyle: 'bold',
@@ -42,20 +42,20 @@ export class EventFeed {
       });
 
     this.container = scene.add
-      .container(width - 122, height - 128, [this.bg, this.title])
+      .container(width - 122, 123, [this.bg, this.title])
       .setDepth(DEPTH.hud)
       .setScrollFactor(0)
-      .setAlpha(0.96);
+      .setAlpha(0.94);
 
     for (let i = 0; i < GAMEPLAY.eventFeedLimit; i += 1) {
       const row = scene.add
-        .text(-94, -34 + i * 18, '', {
+        .text(-94, -28 + i * 16, '', {
           fontFamily: 'monospace',
-          fontSize: '10px',
+          fontSize: '9px',
           color: GAME_HEX.text,
           fixedWidth: 188,
         })
-        .setAlpha(0.82);
+        .setAlpha(0.84);
 
       this.rows.push(row);
       this.container.add(row);
@@ -73,7 +73,6 @@ export class EventFeed {
     });
 
     this.items.splice(GAMEPLAY.eventFeedLimit);
-
     this.render();
 
     this.scene.tweens.add({
