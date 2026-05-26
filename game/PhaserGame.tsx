@@ -9,10 +9,12 @@ export default function PhaserGame({ aiConfig }: { aiConfig: any }) {
   const config = useMemo<Phaser.Types.Core.GameConfig>(() => ({
     type: Phaser.AUTO,
     parent: 'game-container',
+    pixelArt: true,
     scale: {
-      mode: Phaser.Scale.RESIZE,
-      width: '100%',
-      height: '100%'
+      mode: Phaser.Scale.FIT,
+      width: 800,
+      height: 450,
+      autoCenter: Phaser.Scale.CENTER_BOTH
     },
     physics: {
       default: 'arcade',

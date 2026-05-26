@@ -67,14 +67,14 @@ export class MainScene extends Scene {
     // 2. Procedural Parallax Background
     this.bgFar = this.add.tileSprite(width / 2, height - floorHeight - 64, width, 128, 'bgFar');
     this.bgMid = this.add.tileSprite(width / 2, height - floorHeight - 32, width, 64, 'bgMid');
-    this.floor = this.add.tileSprite(width / 2, height - floorHeight / 2, width, floorHeight, 'floor');
+    this.floor = this.add.tileSprite(width / 2, height - 32, width, floorHeight, 'floor');
 
     const ground = this.physics.add.staticGroup();
-    const groundRect = this.add.rectangle(width / 2, height - floorHeight / 2, width, floorHeight, 0x000000, 0);
+    const groundRect = this.add.rectangle(width / 2, height - 32, width, floorHeight, 0x000000, 0);
     ground.add(groundRect);
 
     // 3. Juicy Player Setup
-    this.player = this.physics.add.sprite(150, height - floorHeight - 16, 'player');
+    this.player = this.physics.add.sprite(100, height - floorHeight - 16, 'player');
     this.player.setOrigin(0.5, 0.5);
     this.player.setCollideWorldBounds(true);
     this.player.setGravityY(1500);
@@ -88,7 +88,7 @@ export class MainScene extends Scene {
       gravityY: 100,
       quantity: 1
     });
-    this.emitter.startFollow(this.player, 0, 16);
+    this.emitter.startFollow(this.player, -14, 16);
 
     // 4. Input & Controls
     if (this.input.keyboard) {
@@ -125,16 +125,18 @@ export class MainScene extends Scene {
                 this.player.body!.gravity.y = 4000;
             }
         }
-    } else {
-        if (this.isSliding) {
-            this.isSliding = false;
-            this.player.body!.gravity.y = 1500;
-        }
+    } else if (this.isSliding && !this.cursors?.down.isDown) {
+        this.isSliding = false;
+        this.player.body!.gravity.y = 1500;
+        this.player.setScale(1, 1);
+        this.player.body?.setSize(32, 32);
+        this.player.body?.setOffset(0, 0);
+        this.player.y -= 16; // Pop player out of the floor and prevent falling through
     }
 
     // Jump logic
     if ((this.cursors?.up.isDown || this.spaceKey?.isDown) && isGrounded && !this.isSliding) {
-        this.player.setVelocityY(-600);
+        this.player.setVelocityY(-700);
         this.player.setScale(0.8, 1.2);
     }
 
