@@ -1,10 +1,10 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
-import { DEPTH } from '../constants/layers';
-import { GAME_HEX, GAME_RGB } from '../theme/gameTheme';
-import { GAMEPLAY } from '../config/gameplay';
+import { DEPTH } from "../constants/layers";
+import { GAME_HEX, GAME_RGB } from "../theme/gameTheme";
+import { GAMEPLAY } from "../config/gameplay";
 
-type FeedTone = 'info' | 'good' | 'bad' | 'warning';
+type FeedTone = "info" | "good" | "bad" | "warning";
 
 type FeedItem = {
   text: string;
@@ -33,13 +33,12 @@ export class EventFeed {
       .rectangle(0, 0, 210, 106, GAME_RGB.cream, 0.9)
       .setStrokeStyle(2, GAME_RGB.gold, 0.9);
 
-    this.title = scene.add
-      .text(-94, -46, 'RECENT CASHFLOW', {
-        fontFamily: 'monospace',
-        fontSize: '9px',
-        fontStyle: 'bold',
-        color: GAME_HEX.brown,
-      });
+    this.title = scene.add.text(-94, -46, "RECENT CASHFLOW", {
+      fontFamily: "monospace",
+      fontSize: "9px",
+      fontStyle: "bold",
+      color: GAME_HEX.brown,
+    });
 
     this.container = scene.add
       .container(width - 122, 123, [this.bg, this.title])
@@ -49,9 +48,9 @@ export class EventFeed {
 
     for (let i = 0; i < GAMEPLAY.eventFeedLimit; i += 1) {
       const row = scene.add
-        .text(-94, -28 + i * 16, '', {
-          fontFamily: 'monospace',
-          fontSize: '9px',
+        .text(-94, -28 + i * 16, "", {
+          fontFamily: "monospace",
+          fontSize: "9px",
           color: GAME_HEX.text,
           fixedWidth: 188,
         })
@@ -62,8 +61,8 @@ export class EventFeed {
     }
   }
 
-  push(text: string, tone: FeedTone = 'info') {
-    const safeText = text.replace(/\s+/g, ' ').trim().slice(0, 28);
+  push(text: string, tone: FeedTone = "info") {
+    const safeText = text.replace(/\s+/g, " ").trim().slice(0, 28);
 
     if (!safeText) return;
 
@@ -81,7 +80,7 @@ export class EventFeed {
       scaleY: 1.02,
       duration: 100,
       yoyo: true,
-      ease: 'Sine.easeInOut',
+      ease: "Sine.easeInOut",
     });
   }
 
@@ -90,13 +89,11 @@ export class EventFeed {
       const item = this.items[index];
 
       if (!item) {
-        row.setText('');
+        row.setText("");
         return;
       }
 
-      row
-        .setText(`• ${item.text}`)
-        .setColor(TONE_COLOR[item.tone]);
+      row.setText(`• ${item.text}`).setColor(TONE_COLOR[item.tone]);
     });
   }
 }

@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { 
-  X, 
-  Sparkles, 
-  Scroll, 
-  Flame, 
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import {
+  X,
+  Sparkles,
+  Scroll,
+  Flame,
   PenTool,
   Coffee,
   ShoppingBag,
   Gamepad,
-  Loader2
-} from 'lucide-react';
+  Loader2,
+} from "lucide-react";
 
 interface RoleSetupModalProps {
   isOpen: boolean;
@@ -28,29 +28,34 @@ interface ConfessionTemplate {
   text: string;
 }
 
-export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating = false }: RoleSetupModalProps) {
+export default function RoleSetupModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  isGenerating = false,
+}: RoleSetupModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [confession, setConfession] = useState('');
+  const [confession, setConfession] = useState("");
 
   const templates: ConfessionTemplate[] = [
     {
       id: 1,
-      label: 'College Student (Iced Coffee)',
+      label: "College Student (Iced Coffee)",
       icon: <Coffee className="w-3.5 h-3.5 text-amber-600" />,
-      text: "I'm a college student living on strict pocket money, but I can't resist buying iced coffee every single day."
+      text: "I'm a college student living on strict pocket money, but I can't resist buying iced coffee every single day.",
     },
     {
       id: 2,
-      label: 'Corporate Employee (Paylater)',
+      label: "Corporate Employee (Paylater)",
       icon: <ShoppingBag className="w-3.5 h-3.5 text-purple-600" />,
-      text: "I'm a corporate employee with a decent salary, but my money instantly vanishes into online shopping and paylater bills."
+      text: "I'm a corporate employee with a decent salary, but my money instantly vanishes into online shopping and paylater bills.",
     },
     {
       id: 3,
-      label: 'Freelance Gamer (Gacha)',
+      label: "Freelance Gamer (Gacha)",
       icon: <Gamepad className="w-3.5 h-3.5 text-blue-600" />,
-      text: "I'm a freelancer with unstable income, yet I spend way too much on game top-ups and gacha banners."
-    }
+      text: "I'm a freelancer with unstable income, yet I spend way too much on game top-ups and gacha banners.",
+    },
   ];
 
   // Client-safe mounting to prevent hydration errors (Portals run strictly on browser)
@@ -75,10 +80,10 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
   };
 
   return createPortal(
-    <div 
+    <div
       id="rolesetup-backdrop"
       className="fixed inset-0 z-50 bg-[#4A3A2A]/60 backdrop-blur-md flex items-center justify-center p-4"
-      style={{ animation: 'modalFadeIn 0.4s ease-out forwards' }}
+      style={{ animation: "modalFadeIn 0.4s ease-out forwards" }}
     >
       <style>{`
         @keyframes modalFadeIn {
@@ -92,14 +97,19 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
       `}</style>
 
       {/* Modal Container in Cozy Indie Game Style with Easter-Egg Bouncy curve */}
-      <div 
+      <div
         id="rolesetup-modal-box"
         className="relative w-full max-w-md sm:max-w-lg bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-5 sm:p-7 shadow-[0_12px_0_#8B5E3C] transform max-h-[92vh] flex flex-col uppercase font-sans animate-in"
-        style={{ animation: 'modalBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards' }}
+        style={{
+          animation:
+            "modalBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",
+        }}
       >
         {/* Receipt-style Top Decoration */}
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-[70%] h-5 bg-[#FFF1C7] border-2 border-[#8B5E3C] border-b-0 rounded-t-lg flex items-center justify-between px-3 text-[8px] text-[#4A3A2A] font-mono tracking-widest font-bold">
-          <span className="flex items-center gap-1"><Scroll className="w-2.5 h-2.5 text-[#FF9F1C]" /> ROLE CONFIG</span>
+          <span className="flex items-center gap-1">
+            <Scroll className="w-2.5 h-2.5 text-[#FF9F1C]" /> ROLE CONFIG
+          </span>
           <span className="text-[#FF6B6B]">★ CONFESS</span>
         </div>
 
@@ -114,7 +124,10 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
         </button>
 
         {/* Form Wrap */}
-        <form onSubmit={handleFormSubmit} className="flex flex-col flex-1 overflow-hidden">
+        <form
+          onSubmit={handleFormSubmit}
+          className="flex flex-col flex-1 overflow-hidden"
+        >
           {/* Title Group */}
           <div className="text-center mt-3 mb-4 shrink-0">
             <h2 className="font-pixel text-2xl sm:text-3xl text-[#FF9F1C] font-bold drop-shadow-[0_2.5px_0_#8B5E3C] tracking-wide flex items-center justify-center gap-2">
@@ -123,7 +136,8 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
               <Flame className="w-5 h-5 text-[#FF6B6B] animate-pulse" />
             </h2>
             <p className="text-[9px] font-mono font-bold text-[#4A3A2A]/60 tracking-wider mt-1.5 normal-case">
-              Tell the AI your spending sins to generate custom lifestyle obstacles!
+              Tell the AI your spending sins to generate custom lifestyle
+              obstacles!
             </p>
           </div>
 
@@ -132,7 +146,9 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
             <label className="block text-[8px] font-mono font-black text-[#4A3A2A]/50 tracking-wider mb-2 uppercase">
               ✨ SELECT SPENDING STYLE TEMPLATE:
             </label>
-            <div className={`flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div
+              className={`flex gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x ${isGenerating ? "opacity-50 pointer-events-none" : ""}`}
+            >
               {templates.map((tpl) => (
                 <button
                   key={tpl.id}
@@ -150,10 +166,15 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
 
           {/* Large Text Area Box */}
           <div className="flex-1 min-h-[140px] flex flex-col mb-4 text-left">
-            <label htmlFor="confession-text" className="block text-[8px] font-mono font-black text-[#4A3A2A]/50 tracking-wider mb-1.5 uppercase">
+            <label
+              htmlFor="confession-text"
+              className="block text-[8px] font-mono font-black text-[#4A3A2A]/50 tracking-wider mb-1.5 uppercase"
+            >
               ✍️ EDIT COMPLAINT / FINANCIAL SITUATION:
             </label>
-            <div className={`relative flex-1 flex flex-col bg-white border-2 border-[#8B5E3C] rounded-2xl overflow-hidden shadow-[inset_0_2px_4px_rgba(139,94,60,0.06)] ${isGenerating ? 'opacity-60' : ''}`}>
+            <div
+              className={`relative flex-1 flex flex-col bg-white border-2 border-[#8B5E3C] rounded-2xl overflow-hidden shadow-[inset_0_2px_4px_rgba(139,94,60,0.06)] ${isGenerating ? "opacity-60" : ""}`}
+            >
               <textarea
                 id="confession-text"
                 rows={5}
@@ -166,7 +187,8 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
               />
               <div className="bg-[#FFF1C7]/30 border-t border-[#8B5E3C]/20 px-3 py-1.5 flex justify-between items-center shrink-0">
                 <span className="text-[8px] text-[#4A3A2A]/40 font-mono font-bold uppercase flex items-center gap-1">
-                  <PenTool className="w-2.5 h-2.5" /> AI WILL RE-DESIGN ENEMIES TO MATCH SINS
+                  <PenTool className="w-2.5 h-2.5" /> AI WILL RE-DESIGN ENEMIES
+                  TO MATCH SINS
                 </span>
                 <span className="text-[8px] text-[#4A3A2A]/50 font-mono font-bold">
                   {confession.length}/400
@@ -205,6 +227,6 @@ export default function RoleSetupModal({ isOpen, onClose, onSubmit, isGenerating
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }

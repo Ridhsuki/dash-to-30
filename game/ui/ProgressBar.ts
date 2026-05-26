@@ -1,7 +1,7 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
-import { DEPTH } from '../constants/layers';
-import { GAME_HEX, GAME_RGB } from '../theme/gameTheme';
+import { DEPTH } from "../constants/layers";
+import { GAME_HEX, GAME_RGB } from "../theme/gameTheme";
 
 export class ProgressBar {
   private readonly container: Phaser.GameObjects.Container;
@@ -28,10 +28,10 @@ export class ProgressBar {
       .setOrigin(0.5);
 
     this.label = scene.add
-      .text(0, -10, 'MONTH JOURNEY 1/30', {
-        fontFamily: 'monospace',
-        fontSize: '10px',
-        fontStyle: 'bold',
+      .text(0, -10, "MONTH JOURNEY 1/30", {
+        fontFamily: "monospace",
+        fontSize: "10px",
+        fontStyle: "bold",
         color: GAME_HEX.brown,
       })
       .setOrigin(0.5);
@@ -57,9 +57,7 @@ export class ProgressBar {
             ? GAME_RGB.gold
             : GAME_RGB.green;
 
-    this.fill
-      .setFillStyle(color, 1)
-      .setSize(fillWidth, this.height - 4);
+    this.fill.setFillStyle(color, 1).setSize(fillWidth, this.height - 4);
 
     this.label.setText(`MONTH JOURNEY ${safeDay}/${safeMaxDay}`);
   }

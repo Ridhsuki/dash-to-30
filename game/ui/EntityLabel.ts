@@ -1,8 +1,8 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
-import { DEPTH } from '../constants/layers';
-import { GAME_HEX, GAME_RGB } from '../theme/gameTheme';
-import type { EntityKind } from '../utils/gameText';
+import { DEPTH } from "../constants/layers";
+import { GAME_HEX, GAME_RGB } from "../theme/gameTheme";
+import type { EntityKind } from "../utils/gameText";
 
 type EntityLabelStyle = {
   width: number;
@@ -13,16 +13,11 @@ type EntityLabelStyle = {
 };
 
 export function getEntityLabelStyle(kind: EntityKind): EntityLabelStyle {
-  const width =
-    kind === 'boss'
-      ? 118
-      : kind === 'payday'
-        ? 104
-        : 108;
+  const width = kind === "boss" ? 118 : kind === "payday" ? 104 : 108;
 
   return {
     width,
-    height: kind === 'boss' ? 28 : 26,
+    height: kind === "boss" ? 28 : 26,
     bg: GAME_RGB.cream,
     border: GAME_RGB.brown,
     text: GAME_HEX.text,
@@ -49,11 +44,11 @@ export class EntityLabel {
 
     this.text = scene.add
       .text(0, 1, label, {
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        fontStyle: 'bold',
+        fontFamily: "monospace",
+        fontSize: "11px",
+        fontStyle: "bold",
         color: style.text,
-        align: 'center',
+        align: "center",
         wordWrap: {
           width: style.width - 12,
           useAdvancedWrap: true,

@@ -1,9 +1,15 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
-import { DEPTH } from '../constants/layers';
-import { GAME_HEX, GAME_RGB, PHASE_THEME, getMonthPhase, MonthPhase } from '../theme/gameTheme';
+import { DEPTH } from "../constants/layers";
+import {
+  GAME_HEX,
+  GAME_RGB,
+  PHASE_THEME,
+  getMonthPhase,
+  MonthPhase,
+} from "../theme/gameTheme";
 
-type ScrollKey = 'cloudA' | 'cloudB' | 'farCity' | 'midCity' | 'road';
+type ScrollKey = "cloudA" | "cloudB" | "farCity" | "midCity" | "road";
 
 type Floater = {
   object: Phaser.GameObjects.Image;
@@ -20,7 +26,7 @@ export class FinancialParallaxBackground {
   private height = 450;
   private floorY = 418;
 
-  private currentPhase: MonthPhase = 'young';
+  private currentPhase: MonthPhase = "young";
 
   private skyBack!: Phaser.GameObjects.Image;
   private skyFront!: Phaser.GameObjects.Image;
@@ -74,34 +80,34 @@ export class FinancialParallaxBackground {
       .setDepth(DEPTH.glow);
 
     this.cloudA = this.scene.add
-      .tileSprite(width / 2, 70, width, 96, 'dt30_cloud_soft')
+      .tileSprite(width / 2, 70, width, 96, "dt30_cloud_soft")
       .setAlpha(0.64)
       .setDepth(DEPTH.cloudsBack);
 
     this.cloudB = this.scene.add
-      .tileSprite(width / 2, 124, width, 96, 'dt30_cloud_soft')
+      .tileSprite(width / 2, 124, width, 96, "dt30_cloud_soft")
       .setAlpha(0.34)
       .setDepth(DEPTH.cloudsFront);
 
     this.farCity = this.scene.add
-      .tileSprite(width / 2, floorY - 112, width, 180, 'dt30_far_city')
+      .tileSprite(width / 2, floorY - 112, width, 180, "dt30_far_city")
       .setAlpha(0.78)
       .setDepth(DEPTH.cityBack);
 
     this.midCity = this.scene.add
-      .tileSprite(width / 2, floorY - 70, width, 160, 'dt30_mid_city')
+      .tileSprite(width / 2, floorY - 70, width, 160, "dt30_mid_city")
       .setAlpha(0.94)
       .setDepth(DEPTH.cityFront);
 
     this.road = this.scene.add
-      .tileSprite(width / 2, floorY + 16, width, 96, 'dt30_road')
+      .tileSprite(width / 2, floorY + 16, width, 96, "dt30_road")
       .setDepth(DEPTH.road);
 
     this.phaseLabel = this.scene.add
       .text(width / 2, 58, PHASE_THEME.young.label, {
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        fontStyle: 'bold',
+        fontFamily: "monospace",
+        fontSize: "12px",
+        fontStyle: "bold",
         color: PHASE_THEME.young.labelColor,
         backgroundColor: GAME_HEX.cream,
         padding: { left: 12, right: 12, top: 6, bottom: 6 },
@@ -121,13 +127,19 @@ export class FinancialParallaxBackground {
       this.transitionTo(phase);
     }
 
-    const speedMultiplier = isBossStage ? 1.75 : day >= 21 ? 1.28 : day >= 11 ? 1.08 : 1;
+    const speedMultiplier = isBossStage
+      ? 1.75
+      : day >= 21
+        ? 1.28
+        : day >= 11
+          ? 1.08
+          : 1;
 
-    this.moveTile('cloudA', this.cloudA, 0.12 * speedMultiplier);
-    this.moveTile('cloudB', this.cloudB, 0.18 * speedMultiplier);
-    this.moveTile('farCity', this.farCity, 0.32 * speedMultiplier);
-    this.moveTile('midCity', this.midCity, 0.82 * speedMultiplier);
-    this.moveTile('road', this.road, 3 * speedMultiplier);
+    this.moveTile("cloudA", this.cloudA, 0.12 * speedMultiplier);
+    this.moveTile("cloudB", this.cloudB, 0.18 * speedMultiplier);
+    this.moveTile("farCity", this.farCity, 0.32 * speedMultiplier);
+    this.moveTile("midCity", this.midCity, 0.82 * speedMultiplier);
+    this.moveTile("road", this.road, 3 * speedMultiplier);
 
     const now = this.scene.time.now;
 
@@ -135,11 +147,16 @@ export class FinancialParallaxBackground {
       floater.x -= floater.speed * speedMultiplier;
 
       floater.object.x = Math.round(floater.x);
-      floater.object.y = Math.round(floater.baseY + Math.sin((now + floater.waveOffset) / 720) * 4);
+      floater.object.y = Math.round(
+        floater.baseY + Math.sin((now + floater.waveOffset) / 720) * 4,
+      );
 
       if (floater.x < -48) {
         floater.x = this.width + Phaser.Math.Between(48, 260);
-        floater.baseY = Phaser.Math.Between(58, Math.max(92, this.floorY - 180));
+        floater.baseY = Phaser.Math.Between(
+          58,
+          Math.max(92, this.floorY - 180),
+        );
       }
     });
   }
@@ -152,11 +169,15 @@ export class FinancialParallaxBackground {
       alpha: 0.56,
       duration: 340,
       yoyo: true,
-      ease: 'Sine.easeInOut',
+      ease: "Sine.easeInOut",
     });
   }
 
-  private moveTile(key: ScrollKey, sprite: Phaser.GameObjects.TileSprite, amount: number) {
+  private moveTile(
+    key: ScrollKey,
+    sprite: Phaser.GameObjects.TileSprite,
+    amount: number,
+  ) {
     this.scroll[key] += amount;
     sprite.tilePositionX = Math.round(this.scroll[key]);
   }
@@ -166,16 +187,13 @@ export class FinancialParallaxBackground {
 
     this.skyTween?.stop();
 
-    this.skyFront
-      .setTexture(nextSkyKey)
-      .setAlpha(0)
-      .setVisible(true);
+    this.skyFront.setTexture(nextSkyKey).setAlpha(0).setVisible(true);
 
     this.skyTween = this.scene.tweens.add({
       targets: this.skyFront,
       alpha: 1,
       duration: 1200,
-      ease: 'Sine.easeInOut',
+      ease: "Sine.easeInOut",
       onComplete: () => {
         this.skyBack.setTexture(nextSkyKey);
         this.skyFront.setAlpha(0);
@@ -200,15 +218,15 @@ export class FinancialParallaxBackground {
       .setY(58);
 
     const glowColor =
-      phase === 'boss'
+      phase === "boss"
         ? GAME_RGB.red
-        : phase === 'old'
+        : phase === "old"
           ? GAME_RGB.pink
-          : phase === 'middle'
+          : phase === "middle"
             ? GAME_RGB.gold
             : GAME_RGB.green;
 
-    this.glow.setFillStyle(glowColor, phase === 'boss' ? 0.32 : 0.2);
+    this.glow.setFillStyle(glowColor, phase === "boss" ? 0.32 : 0.2);
 
     this.scene.tweens.add({
       targets: this.phaseLabel,
@@ -216,7 +234,7 @@ export class FinancialParallaxBackground {
       alpha: 0,
       duration: 1000,
       delay: 760,
-      ease: 'Sine.easeInOut',
+      ease: "Sine.easeInOut",
     });
   }
 
@@ -224,7 +242,7 @@ export class FinancialParallaxBackground {
     this.floaters.forEach((floater) => floater.object.destroy());
     this.floaters = [];
 
-    const keys = ['dt30_coin', 'dt30_receipt', 'dt30_bill'];
+    const keys = ["dt30_coin", "dt30_receipt", "dt30_bill"];
 
     for (let i = 0; i < 7; i += 1) {
       const key = keys[i % keys.length];
@@ -249,10 +267,10 @@ export class FinancialParallaxBackground {
   }
 
   private ensureTextures() {
-    this.createSkyTexture('dt30_sky_young', 0xdff4ff, 0xfff6e8, GAME_RGB.green);
-    this.createSkyTexture('dt30_sky_middle', 0xfff1c7, 0xdff4ff, GAME_RGB.gold);
-    this.createSkyTexture('dt30_sky_old', 0xf7d7ff, 0xfff1c7, GAME_RGB.pink);
-    this.createSkyTexture('dt30_sky_boss', 0xffd6d6, 0xfff1c7, GAME_RGB.red);
+    this.createSkyTexture("dt30_sky_young", 0xdff4ff, 0xfff6e8, GAME_RGB.green);
+    this.createSkyTexture("dt30_sky_middle", 0xfff1c7, 0xdff4ff, GAME_RGB.gold);
+    this.createSkyTexture("dt30_sky_old", 0xf7d7ff, 0xfff1c7, GAME_RGB.pink);
+    this.createSkyTexture("dt30_sky_boss", 0xffd6d6, 0xfff1c7, GAME_RGB.red);
 
     this.createCloudTexture();
     this.createFarCityTexture();
@@ -261,7 +279,12 @@ export class FinancialParallaxBackground {
     this.createIconTextures();
   }
 
-  private createSkyTexture(key: string, top: number, bottom: number, accent: number) {
+  private createSkyTexture(
+    key: string,
+    top: number,
+    bottom: number,
+    accent: number,
+  ) {
     if (this.scene.textures.exists(key)) return;
 
     const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
@@ -281,7 +304,12 @@ export class FinancialParallaxBackground {
       const blended = Phaser.Display.Color.GetColor(color.r, color.g, color.b);
 
       graphics.fillStyle(blended, 1);
-      graphics.fillRect(0, Math.round(i * bandHeight), 800, Math.ceil(bandHeight) + 1);
+      graphics.fillRect(
+        0,
+        Math.round(i * bandHeight),
+        800,
+        Math.ceil(bandHeight) + 1,
+      );
     }
 
     graphics.fillStyle(accent, 0.08);
@@ -298,7 +326,7 @@ export class FinancialParallaxBackground {
   }
 
   private createCloudTexture() {
-    if (this.scene.textures.exists('dt30_cloud_soft')) return;
+    if (this.scene.textures.exists("dt30_cloud_soft")) return;
 
     const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
 
@@ -314,12 +342,12 @@ export class FinancialParallaxBackground {
     graphics.fillCircle(302, 40, 16);
     graphics.fillRoundedRect(228, 42, 92, 18, 9);
 
-    graphics.generateTexture('dt30_cloud_soft', 512, 96);
+    graphics.generateTexture("dt30_cloud_soft", 512, 96);
     graphics.destroy();
   }
 
   private createFarCityTexture() {
-    if (this.scene.textures.exists('dt30_far_city')) return;
+    if (this.scene.textures.exists("dt30_far_city")) return;
 
     const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
 
@@ -334,8 +362,17 @@ export class FinancialParallaxBackground {
     ];
 
     buildings.forEach((building, index) => {
-      graphics.fillStyle(index % 2 === 0 ? GAME_RGB.paleBlue : GAME_RGB.aqua, 0.72);
-      graphics.fillRoundedRect(building.x, building.y, building.w, building.h, 8);
+      graphics.fillStyle(
+        index % 2 === 0 ? GAME_RGB.paleBlue : GAME_RGB.aqua,
+        0.72,
+      );
+      graphics.fillRoundedRect(
+        building.x,
+        building.y,
+        building.w,
+        building.h,
+        8,
+      );
 
       graphics.fillStyle(0xffffff, 0.2);
       for (let x = building.x + 16; x < building.x + building.w - 10; x += 24) {
@@ -345,12 +382,12 @@ export class FinancialParallaxBackground {
       }
     });
 
-    graphics.generateTexture('dt30_far_city', 1024, 180);
+    graphics.generateTexture("dt30_far_city", 1024, 180);
     graphics.destroy();
   }
 
   private createMidCityTexture() {
-    if (this.scene.textures.exists('dt30_mid_city')) return;
+    if (this.scene.textures.exists("dt30_mid_city")) return;
 
     const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
 
@@ -377,12 +414,12 @@ export class FinancialParallaxBackground {
       graphics.fillRect(shop.x + shop.w - 62, shop.y + 58, 38, shop.h - 58);
     });
 
-    graphics.generateTexture('dt30_mid_city', 1024, 160);
+    graphics.generateTexture("dt30_mid_city", 1024, 160);
     graphics.destroy();
   }
 
   private createRoadTexture() {
-    if (this.scene.textures.exists('dt30_road')) return;
+    if (this.scene.textures.exists("dt30_road")) return;
 
     const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
 
@@ -414,22 +451,22 @@ export class FinancialParallaxBackground {
       graphics.fillRect(x + 24, 76, 10, 3);
     }
 
-    graphics.generateTexture('dt30_road', 512, 96);
+    graphics.generateTexture("dt30_road", 512, 96);
     graphics.destroy();
   }
 
   private createIconTextures() {
-    if (!this.scene.textures.exists('dt30_coin')) {
+    if (!this.scene.textures.exists("dt30_coin")) {
       const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
       graphics.fillStyle(GAME_RGB.gold, 1);
       graphics.fillCircle(16, 16, 13);
       graphics.lineStyle(3, GAME_RGB.orange, 1);
       graphics.strokeCircle(16, 16, 10);
-      graphics.generateTexture('dt30_coin', 32, 32);
+      graphics.generateTexture("dt30_coin", 32, 32);
       graphics.destroy();
     }
 
-    if (!this.scene.textures.exists('dt30_receipt')) {
+    if (!this.scene.textures.exists("dt30_receipt")) {
       const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
       graphics.fillStyle(GAME_RGB.cream, 1);
       graphics.fillRoundedRect(4, 2, 24, 32, 4);
@@ -437,17 +474,17 @@ export class FinancialParallaxBackground {
       graphics.fillRect(9, 10, 14, 2);
       graphics.fillRect(9, 17, 11, 2);
       graphics.fillRect(9, 24, 15, 2);
-      graphics.generateTexture('dt30_receipt', 32, 36);
+      graphics.generateTexture("dt30_receipt", 32, 36);
       graphics.destroy();
     }
 
-    if (!this.scene.textures.exists('dt30_bill')) {
+    if (!this.scene.textures.exists("dt30_bill")) {
       const graphics = this.scene.make.graphics({ x: 0, y: 0 }, false);
       graphics.fillStyle(GAME_RGB.pink, 1);
       graphics.fillRoundedRect(3, 8, 30, 18, 5);
       graphics.fillStyle(0xffffff, 0.55);
       graphics.fillCircle(18, 17, 5);
-      graphics.generateTexture('dt30_bill', 36, 36);
+      graphics.generateTexture("dt30_bill", 36, 36);
       graphics.destroy();
     }
   }

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef } from 'react';
-import Phaser from 'phaser';
+import React, { useEffect, useRef } from "react";
+import Phaser from "phaser";
 
 export interface PhaserGameProps {
   config: Phaser.Types.Core.GameConfig;
@@ -11,16 +11,18 @@ export const PhaserGame: React.FC<PhaserGameProps> = ({ config }) => {
   const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     let gameInstance: Phaser.Game | null = null;
-    
+
     const initTimer = setTimeout(() => {
-      const parentElement = document.getElementById(config.parent as string || 'game-container');
+      const parentElement = document.getElementById(
+        (config.parent as string) || "game-container",
+      );
       if (parentElement && !gameRef.current) {
         gameInstance = new Phaser.Game({
           ...config,
-          parent: config.parent || 'game-container'
+          parent: config.parent || "game-container",
         });
         gameRef.current = gameInstance;
       }
@@ -38,8 +40,8 @@ export const PhaserGame: React.FC<PhaserGameProps> = ({ config }) => {
   }, [config]);
 
   return (
-    <div 
-      id={config.parent as string || "game-container"} 
+    <div
+      id={(config.parent as string) || "game-container"}
       className="w-full h-full"
     />
   );

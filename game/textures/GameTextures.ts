@@ -1,6 +1,6 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
 
-import { GAME_RGB } from '../theme/gameTheme';
+import { GAME_RGB } from "../theme/gameTheme";
 
 type DrawTexture = (graphics: Phaser.GameObjects.Graphics) => void;
 
@@ -22,13 +22,18 @@ function createTextureOnce(
   graphics.destroy();
 }
 
-function shine(graphics: Phaser.GameObjects.Graphics, x: number, y: number, width: number) {
+function shine(
+  graphics: Phaser.GameObjects.Graphics,
+  x: number,
+  y: number,
+  width: number,
+) {
   graphics.fillStyle(0xffffff, 0.22);
   graphics.fillRoundedRect(x, y, width, 4, 2);
 }
 
 function drawShoe(graphics: Phaser.GameObjects.Graphics, x: number, y: number) {
-  graphics.fillStyle(GAME_RGB.brown, 1);
+  graphics.fillStyle(GAME_RGB.purple, 1);
   graphics.fillRoundedRect(x, y, 10, 5, 2);
 }
 
@@ -49,13 +54,13 @@ function drawFace(graphics: Phaser.GameObjects.Graphics, eyeY: number) {
 
 function drawPlayerBase(
   graphics: Phaser.GameObjects.Graphics,
-  legPose: 'left' | 'right' | 'jump' | 'slide',
+  legPose: "left" | "right" | "jump" | "slide",
 ) {
   // Shadow
   graphics.fillStyle(GAME_RGB.text, 0.16);
   graphics.fillEllipse(24, 48, 30, 8);
 
-  if (legPose === 'slide') {
+  if (legPose === "slide") {
     graphics.fillStyle(GAME_RGB.green, 1);
     graphics.fillRoundedRect(8, 23, 34, 17, 8);
 
@@ -94,7 +99,7 @@ function drawPlayerBase(
   graphics.fillStyle(GAME_RGB.pink, 0.92);
   graphics.fillRoundedRect(32, 27, 7, 10, 3);
 
-  if (legPose === 'left') {
+  if (legPose === "left") {
     drawShoe(graphics, 10, 44);
     drawShoe(graphics, 28, 43);
     graphics.fillStyle(GAME_RGB.brown, 1);
@@ -102,7 +107,7 @@ function drawPlayerBase(
     graphics.fillRect(29, 38, 5, 7);
   }
 
-  if (legPose === 'right') {
+  if (legPose === "right") {
     drawShoe(graphics, 13, 43);
     drawShoe(graphics, 31, 44);
     graphics.fillStyle(GAME_RGB.brown, 1);
@@ -110,7 +115,7 @@ function drawPlayerBase(
     graphics.fillRect(31, 39, 5, 7);
   }
 
-  if (legPose === 'jump') {
+  if (legPose === "jump") {
     graphics.fillStyle(GAME_RGB.brown, 1);
     graphics.fillRect(15, 38, 5, 7);
     graphics.fillRect(30, 38, 5, 7);
@@ -196,34 +201,34 @@ function drawBossObstacle(graphics: Phaser.GameObjects.Graphics) {
 }
 
 export function createCoreGameTextures(scene: Phaser.Scene) {
-  createTextureOnce(scene, 'particle', 6, 6, (graphics) => {
+  createTextureOnce(scene, "particle", 6, 6, (graphics) => {
     graphics.fillStyle(GAME_RGB.brown, 1);
     graphics.fillRect(0, 0, 6, 6);
   });
 
-  createTextureOnce(scene, 'player_run_1', 48, 52, (graphics) => {
-    drawPlayerBase(graphics, 'left');
+  createTextureOnce(scene, "player_run_1", 48, 52, (graphics) => {
+    drawPlayerBase(graphics, "left");
   });
 
-  createTextureOnce(scene, 'player_run_2', 48, 52, (graphics) => {
-    drawPlayerBase(graphics, 'right');
+  createTextureOnce(scene, "player_run_2", 48, 52, (graphics) => {
+    drawPlayerBase(graphics, "right");
   });
 
-  createTextureOnce(scene, 'player_jump', 48, 52, (graphics) => {
-    drawPlayerBase(graphics, 'jump');
+  createTextureOnce(scene, "player_jump", 48, 52, (graphics) => {
+    drawPlayerBase(graphics, "jump");
   });
 
-  createTextureOnce(scene, 'player_slide', 48, 52, (graphics) => {
-    drawPlayerBase(graphics, 'slide');
+  createTextureOnce(scene, "player_slide", 48, 52, (graphics) => {
+    drawPlayerBase(graphics, "slide");
   });
 
   // Compatibility key. Keep this so old references do not break.
-  createTextureOnce(scene, 'player', 48, 52, (graphics) => {
-    drawPlayerBase(graphics, 'left');
+  createTextureOnce(scene, "player", 48, 52, (graphics) => {
+    drawPlayerBase(graphics, "left");
   });
 
-  createTextureOnce(scene, 'tex_want', 48, 48, drawWarningObstacle);
-  createTextureOnce(scene, 'tex_need', 48, 48, drawReceiptObstacle);
-  createTextureOnce(scene, 'tex_payday', 48, 48, drawPaydayObstacle);
-  createTextureOnce(scene, 'tex_boss', 78, 78, drawBossObstacle);
+  createTextureOnce(scene, "tex_want", 48, 48, drawWarningObstacle);
+  createTextureOnce(scene, "tex_need", 48, 48, drawReceiptObstacle);
+  createTextureOnce(scene, "tex_payday", 48, 48, drawPaydayObstacle);
+  createTextureOnce(scene, "tex_boss", 78, 78, drawBossObstacle);
 }

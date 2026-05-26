@@ -1,4 +1,4 @@
-export type MonthPhase = 'young' | 'middle' | 'old' | 'boss';
+export type MonthPhase = "young" | "middle" | "old" | "boss";
 
 export const GAME_RGB = {
   sky: 0xdff4ff,
@@ -17,19 +17,19 @@ export const GAME_RGB = {
 } as const;
 
 export const GAME_HEX = {
-  sky: '#DFF4FF',
-  cream: '#FFF6E8',
-  receipt: '#FFF1C7',
-  text: '#4A3A2A',
-  brown: '#8B5E3C',
-  gold: '#FFC857',
-  orange: '#FF9F1C',
-  green: '#6FD08C',
-  pink: '#FF7AA2',
-  red: '#FF6B6B',
-  purple: '#9B8CFF',
-  aqua: '#BFEDFF',
-  paleBlue: '#CDEFFF',
+  sky: "#DFF4FF",
+  cream: "#FFF6E8",
+  receipt: "#FFF1C7",
+  text: "#4A3A2A",
+  brown: "#8B5E3C",
+  gold: "#FFC857",
+  orange: "#FF9F1C",
+  green: "#6FD08C",
+  pink: "#FF7AA2",
+  red: "#FF6B6B",
+  purple: "#9B8CFF",
+  aqua: "#BFEDFF",
+  paleBlue: "#CDEFFF",
 } as const;
 
 export const PHASE_THEME: Record<
@@ -41,30 +41,30 @@ export const PHASE_THEME: Record<
   }
 > = {
   young: {
-    label: 'TANGGAL MUDA MODE',
-    skyKey: 'dt30_sky_young',
+    label: "TANGGAL MUDA MODE",
+    skyKey: "dt30_sky_young",
     labelColor: GAME_HEX.green,
   },
   middle: {
-    label: 'MID MONTH REALITY CHECK',
-    skyKey: 'dt30_sky_middle',
+    label: "MID MONTH REALITY CHECK",
+    skyKey: "dt30_sky_middle",
     labelColor: GAME_HEX.gold,
   },
   old: {
-    label: 'TANGGAL TUA SURVIVAL',
-    skyKey: 'dt30_sky_old',
+    label: "TANGGAL TUA SURVIVAL",
+    skyKey: "dt30_sky_old",
     labelColor: GAME_HEX.pink,
   },
   boss: {
-    label: 'AKHIR BULAN BOSS STAGE',
-    skyKey: 'dt30_sky_boss',
+    label: "AKHIR BULAN BOSS STAGE",
+    skyKey: "dt30_sky_boss",
     labelColor: GAME_HEX.red,
   },
 };
 
 export function getMonthPhase(day: number, isBossStage: boolean): MonthPhase {
-  if (isBossStage || day >= 28) return 'boss';
-  if (day >= 21) return 'old';
-  if (day >= 11) return 'middle';
-  return 'young';
+  if (isBossStage || day >= 28) return "boss";
+  if (day >= 21) return "old";
+  if (day >= 11) return "middle";
+  return "young";
 }
