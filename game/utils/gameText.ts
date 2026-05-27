@@ -1,147 +1,144 @@
 export type EntityKind = "want" | "need" | "payday" | "boss";
 
+export type RoastProfile = {
+  default: string;
+  tooManyWants: string;
+  missedNeeds: string;
+  bossHit: string;
+  lowBalance: string;
+  win: string;
+};
+
 export type GameAiConfig = {
   wants: string[];
   needs: string[];
   roast: string;
+  roasts: RoastProfile;
+};
+
+const DEFAULT_ROASTS: RoastProfile = {
+  default: "Your wallet tried its best, but your spending had other plans.",
+  tooManyWants:
+    "You gave every want a VIP pass, then acted shocked when your wallet left.",
+  missedNeeds:
+    "You ignored basic needs like budgeting was a magic trick. It was not.",
+  bossHit: "The big bill arrived, and your wallet folded like a cheap receipt.",
+  lowBalance:
+    "Your balance did not disappear. It escaped for emotional safety.",
+  win: "You balanced needs and wants. Your wallet finally respects you.",
 };
 
 const DEFAULT_CONFIG: GameAiConfig = {
   wants: ["Coffee", "Gacha", "Paylater"],
   needs: ["Rent", "Groceries"],
-  roast: "Broke!",
+  roast: DEFAULT_ROASTS.default,
+  roasts: DEFAULT_ROASTS,
 };
 
-const STOP_WORDS = new Set([
-  "the",
-  "a",
-  "an",
-  "of",
-  "and",
-  "or",
-  "for",
-  "to",
-  "di",
-  "ke",
-  "dari",
-  "yang",
-  "dan",
-  "atau",
-  "untuk",
-  "dengan",
-  "bulan",
-  "ini",
-]);
-
-const MAX_FULL_LABEL_LENGTH = 42;
-
-function cleanText(value: unknown, fallback: string): string {
+function normalizeText(value: unknown, fallback: string, maxLength = 42) {
   const raw = typeof value === "string" ? value : fallback;
 
   const cleaned = raw
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s+&/-]/g, " ")
+    .replace(/[^\w\s+&/.,!?'-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-  return cleaned || fallback;
+  return (cleaned || fallback).slice(0, maxLength);
 }
 
-function limitText(value: string, maxLength: number): string {
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+function normalizeRoast(value: unknown, fallback: string) {
+  return normalizeText(value, fallback, 190);
 }
 
-function normalizeLabel(value: unknown, fallback: string): string {
-  return limitText(cleanText(value, fallback), MAX_FULL_LABEL_LENGTH);
-}
-
-function normalizeRoast(value: unknown): string {
-  const raw = typeof value === "string" ? value : DEFAULT_CONFIG.roast;
-
-  return raw.replace(/\s+/g, " ").trim().slice(0, 180) || DEFAULT_CONFIG.roast;
-}
-
-function fillList(
-  items: string[],
-  fallback: string[],
-  targetLength: number,
-): string[] {
-  const result = [...items];
-
-  for (let i = 0; result.length < targetLength; i += 1) {
-    result.push(fallback[i % fallback.length]);
-  }
-
-  return result.slice(0, targetLength);
-}
-
-export function normalizeAiConfig(input: unknown): GameAiConfig {
-  const value =
-    input && typeof input === "object" ? (input as Partial<GameAiConfig>) : {};
-
-  const wants = Array.isArray(value.wants)
-    ? value.wants.map((item) => normalizeLabel(item, "Debt")).filter(Boolean)
-    : [];
-
-  const needs = Array.isArray(value.needs)
-    ? value.needs.map((item) => normalizeLabel(item, "Bill")).filter(Boolean)
-    : [];
+function normalizeRoasts(value: unknown, legacyRoast: string): RoastProfile {
+  const source =
+    value && typeof value === "object" ? (value as Partial<RoastProfile>) : {};
 
   return {
-    wants: fillList(wants, DEFAULT_CONFIG.wants, 3),
-    needs: fillList(needs, DEFAULT_CONFIG.needs, 2),
-    roast: normalizeRoast(value.roast),
+    default: normalizeRoast(
+      source.default,
+      legacyRoast || DEFAULT_ROASTS.default,
+    ),
+    tooManyWants: normalizeRoast(
+      source.tooManyWants,
+      legacyRoast || DEFAULT_ROASTS.tooManyWants,
+    ),
+    missedNeeds: normalizeRoast(
+      source.missedNeeds,
+      legacyRoast || DEFAULT_ROASTS.missedNeeds,
+    ),
+    bossHit: normalizeRoast(
+      source.bossHit,
+      legacyRoast || DEFAULT_ROASTS.bossHit,
+    ),
+    lowBalance: normalizeRoast(
+      source.lowBalance,
+      legacyRoast || DEFAULT_ROASTS.lowBalance,
+    ),
+    win: normalizeRoast(source.win, DEFAULT_ROASTS.win),
   };
 }
 
-export function pickRandomLabel(items: string[], fallback: string): string {
-  if (!items.length) return fallback;
+export function normalizeAiConfig(value: unknown): GameAiConfig {
+  if (!value || typeof value !== "object") {
+    return DEFAULT_CONFIG;
+  }
 
-  const index = Math.floor(Math.random() * items.length);
-  return items[index] || fallback;
+  const source = value as Partial<GameAiConfig>;
+
+  const wants = Array.isArray(source.wants)
+    ? source.wants
+        .slice(0, 3)
+        .map((item, index) =>
+          normalizeText(item, DEFAULT_CONFIG.wants[index] || "Debt", 16),
+        )
+    : DEFAULT_CONFIG.wants;
+
+  const needs = Array.isArray(source.needs)
+    ? source.needs
+        .slice(0, 2)
+        .map((item, index) =>
+          normalizeText(item, DEFAULT_CONFIG.needs[index] || "Bill", 16),
+        )
+    : DEFAULT_CONFIG.needs;
+
+  const roast = normalizeRoast(source.roast, DEFAULT_CONFIG.roast);
+  const roasts = normalizeRoasts(source.roasts, roast);
+
+  return {
+    wants,
+    needs,
+    roast,
+    roasts,
+  };
 }
 
-export function compactEntityLabel(
-  value: unknown,
-  kind: EntityKind,
-): {
-  fullLabel: string;
-  shortLabel: string;
-} {
-  if (kind === "payday") {
-    return {
-      fullLabel: "PAYDAY",
-      shortLabel: "PAYDAY",
-    };
+export function pickRandomLabel(labels: string[], fallback: string) {
+  if (!Array.isArray(labels) || labels.length === 0) {
+    return fallback;
   }
 
-  if (kind === "boss") {
-    const fullLabel = normalizeLabel(value, "Tax Audit");
+  return labels[Math.floor(Math.random() * labels.length)] || fallback;
+}
 
-    return {
-      fullLabel,
-      shortLabel: limitText(fullLabel.toUpperCase(), 12),
-    };
-  }
+export function compactEntityLabel(label: string, kind: EntityKind) {
+  const fallback =
+    kind === "want"
+      ? "Want"
+      : kind === "need"
+        ? "Need"
+        : kind === "boss"
+          ? "Boss"
+          : "Payday";
 
-  const fullLabel = normalizeLabel(value, kind === "need" ? "Bill" : "Debt");
-  const words = fullLabel.split(" ").filter(Boolean);
-
-  const usefulWords = words.filter(
-    (word) => !STOP_WORDS.has(word.toLowerCase()),
-  );
-  const selectedWords = usefulWords.length > 0 ? usefulWords : words;
-
-  const maxLength = kind === "need" ? 13 : 12;
-  const shortLabel = limitText(
-    selectedWords.slice(0, 2).join(" ").toUpperCase(),
-    maxLength,
-  );
+  const fullLabel = normalizeText(label, fallback, 42);
+  const shortLabel =
+    fullLabel.length > 14 ? `${fullLabel.slice(0, 13)}…` : fullLabel;
 
   return {
     fullLabel,
-    shortLabel: shortLabel || fullLabel.slice(0, maxLength).toUpperCase(),
+    shortLabel,
   };
 }

@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${pressStart2P.variable}`}>
       <body
-        className="bg-slate-900 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-slate-950"
+        className="bg-[#DFF4FF] text-slate-100 min-h-screen font-sans selection:bg-[#DFF4FF] selection:text-slate-950"
         suppressHydrationWarning
       >
         {children}

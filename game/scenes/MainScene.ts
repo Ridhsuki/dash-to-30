@@ -73,6 +73,9 @@ export class MainScene extends Phaser.Scene {
   needsTaken: number = 0;
   wantsAvoided: number = 0;
   bossAvoided: number = 0;
+  wantsHit: number = 0;
+  missedNeeds: number = 0;
+  bossHits: number = 0;
   essentialLife: number = GAMEPLAY.maxEssentialLife;
 
   hasCollectedInitialPayday: boolean = false;
@@ -97,6 +100,9 @@ export class MainScene extends Phaser.Scene {
     this.needsTaken = 0;
     this.wantsAvoided = 0;
     this.bossAvoided = 0;
+    this.wantsHit = 0;
+    this.missedNeeds = 0;
+    this.bossHits = 0;
     this.essentialLife = GAMEPLAY.maxEssentialLife;
 
     this.hasCollectedInitialPayday = false;
@@ -277,10 +283,44 @@ export class MainScene extends Phaser.Scene {
   }
 
   private getRoastMessage() {
-    const roast = this.aiConfig?.roast?.trim();
+    const roasts = this.aiConfig.roasts;
+    const legacyRoast =
+      this.aiConfig?.roast?.trim() ||
+      "Your wallet tried its best, but your spending had other plans.";
 
+    const needsNeglected =
+      this.missedNeeds >= 2 ||
+      this.essentialLife <= 1 ||
+      this.missedNeeds > this.needsTaken;
+
+    const wantsProblem =
+      this.wantsHit >= 2 || this.wantsHit > this.needsTaken + 1;
+
+    const bossProblem = this.bossHits > 0;
+
+    if (needsNeglected && this.missedNeeds >= this.wantsHit) {
+      return roasts.missedNeeds || legacyRoast;
+    }
+
+    if (wantsProblem) {
+      return roasts.tooManyWants || legacyRoast;
+    }
+
+    if (bossProblem) {
+      return roasts.bossHit || legacyRoast;
+    }
+
+    if (this.balance <= 0) {
+      return roasts.lowBalance || legacyRoast;
+    }
+
+    return roasts.default || legacyRoast;
+  }
+
+  private getWinMessage() {
     return (
-      roast || "Your wallet tried its best, but your spending had other plans."
+      this.aiConfig.roasts?.win ||
+      "You balanced needs and wants. Your wallet finally stopped crying."
     );
   }
 
@@ -990,6 +1030,12 @@ export class MainScene extends Phaser.Scene {
 
     this.destroyEntity(want);
 
+    if (isBoss) {
+      this.bossHits += 1;
+    } else {
+      this.wantsHit += 1;
+    }
+
     this.updateBalance(isBoss ? GAMEPLAY.bossDamage : GAMEPLAY.wantDamage);
     this.eventFeed.push(`Hit ${label}`, "bad");
 
@@ -1084,6 +1130,9 @@ export class MainScene extends Phaser.Scene {
       needsTaken: this.needsTaken,
       wantsAvoided: this.wantsAvoided,
       bossAvoided: this.bossAvoided,
+      wantsHit: this.wantsHit,
+      missedNeeds: this.missedNeeds,
+      bossHits: this.bossHits,
       essentialLife: this.essentialLife,
       isNewPersonalHighScore: highScore.isNewHighScore,
       previousPersonalBest: highScore.previousBest,
@@ -1170,7 +1219,7 @@ export class MainScene extends Phaser.Scene {
       .text(
         cx,
         cy + 48,
-        `NEEDS: ${this.needsTaken} | LIFE: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife} | AVOIDED: ${this.wantsAvoided} | BOSS: ${this.bossAvoided}`,
+        `NEEDS TAKEN: ${this.needsTaken} | NEEDS MISSED: ${this.missedNeeds} | WANTS HIT: ${this.wantsHit} | WANTS AVOIDED: ${this.wantsAvoided}`,
         {
           fontSize: "15px",
           color: "#4A3A2A",
@@ -1186,7 +1235,7 @@ export class MainScene extends Phaser.Scene {
         cx,
         cy - 8,
         isWin
-          ? `You balanced wants and needs. Wallet: $${this.balance}`
+          ? `${this.getWinMessage()} Wallet: $${this.balance}`
           : `AI ROAST: "${this.getRoastMessage()}"`,
         {
           fontSize: "15px",
@@ -1342,6 +1391,7 @@ export class MainScene extends Phaser.Scene {
           const label = entity.fullLabel || entity.kind || "item";
 
           if (entity.isNeed) {
+            this.missedNeeds += 1;
             this.updateBalance(GAMEPLAY.missedNeedPenalty);
             this.updateEssentialLife(-GAMEPLAY.missedNeedLifePenalty);
             this.scorePoints += GAMEPLAY.pointsPerMissedNeedPenalty;
