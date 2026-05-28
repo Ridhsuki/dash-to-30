@@ -20,6 +20,8 @@ import {
 } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import LeaderboardModal from "./LeaderboardModal";
+import HowToPlayHomeModal from "./HowToPlayHomeModal";
+import LogoutConfirmModal from "./LogoutConfirmModal";
 import LeaderboardSubmitToast from "./LeaderboardSubmitToast";
 import RoleSetupModal from "./RoleSetupModal";
 import GameWrapper from "@/components/GameWrapper";
@@ -43,6 +45,8 @@ export default function MenuActions() {
   const [copied, setCopied] = useState(false);
 
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [isHowToPlayOpen, setIsHowToPlayOpen] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -338,6 +342,7 @@ export default function MenuActions() {
           </button>
 
           <button
+            onClick={() => setIsHowToPlayOpen(true)}
             type="button"
             className="group relative w-full bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3.5 rounded-xl transition-all flex items-center justify-center gap-2.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
           >
@@ -392,7 +397,7 @@ export default function MenuActions() {
               </div>
 
               <button
-                onClick={handleLogout}
+                onClick={() => setIsLogoutConfirmOpen(true)}
                 type="button"
                 title="Log Out"
                 className="w-8 h-8 rounded-lg bg-[#FF7AA2]/10 hover:bg-[#FF7AA2]/20 border-2 border-[#8B5E3C] text-[#FF7AA2] flex items-center justify-center transition-all active:translate-y-[1px] hover:text-[#FF6B6B] cursor-pointer"
@@ -412,6 +417,22 @@ export default function MenuActions() {
           )}
         </>
       )}
+
+      <HowToPlayHomeModal
+        isOpen={isHowToPlayOpen}
+        onClose={() => setIsHowToPlayOpen(false)}
+      />
+
+      <LogoutConfirmModal
+        isOpen={isLogoutConfirmOpen}
+        onClose={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={handleLogout}
+        username={
+          user?.displayName?.split(" ")[0] ||
+          user?.email?.split("@")[0] ||
+          "Player"
+        }
+      />
 
       <LeaderboardModal
         isOpen={isLeaderboardOpen}

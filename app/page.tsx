@@ -1,5 +1,6 @@
 import React from "react";
-import { Settings } from "lucide-react";
+import HomeSettingsButton from "@/components/landing/HomeSettingsButton";
+import GlobalToaster from "@/components/landing/GlobalToaster";
 import ParallaxGameBackground from "@/components/landing/ParallaxGameBackground";
 import MenuActions from "@/components/landing/MenuActions";
 
@@ -38,6 +39,8 @@ export default function HomePage() {
         }
       `}</style>
 
+      <GlobalToaster />
+
       {/* 2. Soft, Branded Parallax Background with Falling Financial Snow Dust & silhouettes */}
       <ParallaxGameBackground />
 
@@ -70,13 +73,7 @@ export default function HomePage() {
           </div>
 
           {/* Quiet Settings trigger */}
-          <button
-            type="button"
-            className="w-8 h-8 rounded-full bg-[#FFF6E8] hover:bg-white border-2 border-[#8B5E3C] flex items-center justify-center text-[#4A3A2A] transition-all shadow-[0_3px_0_#8B5E3C] active:translate-y-[2px] active:shadow-[0_1px_0_#8B5E3C] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
-            aria-label="Settings"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+          <HomeSettingsButton />
         </div>
       </header>
 
