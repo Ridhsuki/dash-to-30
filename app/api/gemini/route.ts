@@ -13,6 +13,7 @@ interface RoastProfile {
 interface GameConfigResponse {
   wants: string[];
   needs: string[];
+  bosses: string[];
   roast: string;
   roasts: RoastProfile;
 }
@@ -34,6 +35,14 @@ const FALLBACK_ROASTS: RoastProfile = {
 const FALLBACK_CONFIG: GameConfigResponse = {
   wants: ["Kopi", "Diskon", "Gacha"],
   needs: ["Makan", "Kos"],
+  bosses: [
+    "Nikahan",
+    "Arisan",
+    "Kecelakaan",
+    "Servis Motor",
+    "Kondangan",
+    "Cicilan",
+  ],
   roast: FALLBACK_ROASTS.default,
   roasts: FALLBACK_ROASTS,
 };
@@ -137,6 +146,7 @@ VIBE GAME:
 ATURAN OUTPUT:
 - JSON saja (STRICT)
 - wants & needs maksimal 2 kata
+- boss maksimal 2 kata dan berupa pengeluaran besar mendadak
 - roast maksimal 120 karakter
 - tetap aman (NO SARA, NO self-harm, NO hate speech)
 - tetap lucu, tidak ofensif serius
@@ -152,6 +162,7 @@ FORMAT JSON:
 {
   "wants": ["string", "string", "string"],
   "needs": ["string", "string"],
+  "bosses": ["string", "string", "string", "string"],
   "roast": "string",
   "roasts": {
     "default": "string",
@@ -188,6 +199,16 @@ FORMAT JSON:
           .map((v: unknown, i: number) =>
             sanitizeGameLabel(v, FALLBACK_CONFIG.needs[i] || "Kebutuhan"),
           ),
+        bosses: Array.isArray(parsed.bosses)
+          ? parsed.bosses
+              .slice(0, 6)
+              .map((item: unknown, index: number) =>
+                sanitizeGameLabel(
+                  item,
+                  FALLBACK_CONFIG.bosses[index] || "Tagihan",
+                ),
+              )
+          : FALLBACK_CONFIG.bosses,
         roast: roasts.default,
         roasts,
       });

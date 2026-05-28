@@ -12,6 +12,7 @@ export type RoastProfile = {
 export type GameAiConfig = {
   wants: string[];
   needs: string[];
+  bosses: string[];
   roast: string;
   roasts: RoastProfile;
 };
@@ -33,6 +34,14 @@ const DEFAULT_ROASTS: RoastProfile = {
 const DEFAULT_CONFIG: GameAiConfig = {
   wants: ["Kopi", "Diskon", "Gacha"],
   needs: ["Makan", "Kos"],
+  bosses: [
+    "Nikahan",
+    "Arisan",
+    "Biaya Klinik",
+    "Servis Motor",
+    "Kondangan",
+    "Cicilan",
+  ],
   roast: DEFAULT_ROASTS.default,
   roasts: DEFAULT_ROASTS,
 };
@@ -97,12 +106,21 @@ export function normalizeAiConfig(value: unknown): GameAiConfig {
         )
     : DEFAULT_CONFIG.needs;
 
+  const bosses = Array.isArray(source.bosses)
+    ? source.bosses
+        .slice(0, 6)
+        .map((item, index) =>
+          normalizeText(item, DEFAULT_CONFIG.bosses[index] || "Tagihan", 16),
+        )
+    : DEFAULT_CONFIG.bosses;
+
   const roast = normalizeRoast(source.roast, DEFAULT_CONFIG.roast);
   const roasts = normalizeRoasts(source.roasts, roast);
 
   return {
     wants,
     needs,
+    bosses,
     roast,
     roasts,
   };

@@ -65,6 +65,7 @@ export class MainScene extends Phaser.Scene {
   isFinishingWin: boolean = false;
   isPaused: boolean = false;
   pauseOverlay?: Phaser.GameObjects.Container;
+  mobileControls?: Phaser.GameObjects.Container;
   receiptOverlay?: Phaser.GameObjects.Container;
   howToPlayOverlay?: Phaser.GameObjects.Container;
 
@@ -83,6 +84,8 @@ export class MainScene extends Phaser.Scene {
 
   hasCollectedInitialPayday: boolean = false;
   controlsLocked: boolean = true;
+  mobileJumpQueued: boolean = false;
+  mobileSlideHeld: boolean = false;
   gameSpeedMultiplier: number = 1;
   runId: string = "";
 
@@ -114,6 +117,8 @@ export class MainScene extends Phaser.Scene {
 
     this.hasCollectedInitialPayday = false;
     this.controlsLocked = true;
+    this.mobileJumpQueued = false;
+    this.mobileSlideHeld = false;
     this.gameSpeedMultiplier = 1;
     this.runId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -938,6 +943,159 @@ export class MainScene extends Phaser.Scene {
     }
   }
 
+  private pickBossLabel() {
+    const universalBosses = [
+      "Tagihan Kos",
+      "Pajak",
+      "Biaya Klinik",
+      "Servis Motor",
+      "Undangan",
+      "Titipan",
+      "Cicilan",
+      "Kuota Habis",
+      "Biaya Admin",
+      "Token Listrik",
+    ];
+
+    const personalizedBosses = Array.isArray(this.aiConfig.bosses)
+      ? this.aiConfig.bosses
+      : [];
+
+    return pickRandomLabel(
+      [...personalizedBosses, ...universalBosses],
+      "Tagihan Besar",
+    );
+  }
+
+  private shouldShowMobileControls() {
+    if (this.scale.width <= 768) return true;
+
+    if (typeof window === "undefined") return false;
+
+    return window.matchMedia?.("(pointer: coarse)").matches ?? false;
+  }
+
+  private consumeMobileJumpQueued() {
+    const queued = this.mobileJumpQueued;
+    this.mobileJumpQueued = false;
+    return queued;
+  }
+
+  private destroyMobileControls() {
+    this.mobileJumpQueued = false;
+    this.mobileSlideHeld = false;
+    this.mobileControls?.destroy(true);
+    this.mobileControls = undefined;
+  }
+
+  private createMobileControls() {
+    this.destroyMobileControls();
+
+    if (!this.shouldShowMobileControls()) return;
+
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const y = height - 104;
+
+    const makeButton = (
+      x: number,
+      icon: string,
+      label: string,
+      fillColor: number,
+      onPress: () => void,
+      onRelease?: () => void,
+    ) => {
+      const hitArea = this.add
+        .rectangle(0, 0, 112, 88, 0xffffff, 0.001)
+        .setOrigin(0.5);
+
+      const bg = this.add.graphics();
+      bg.fillStyle(fillColor, 0.96);
+      bg.fillRoundedRect(-50, -38, 100, 76, 22);
+      bg.lineStyle(3, 0x8b5e3c, 1);
+      bg.strokeRoundedRect(-50, -38, 100, 76, 22);
+
+      const iconText = this.add
+        .text(0, -11, icon, {
+          fontFamily: "monospace",
+          fontSize: "28px",
+          fontStyle: "bold",
+          color: "#4A3A2A",
+        })
+        .setOrigin(0.5);
+
+      const labelText = this.add
+        .text(0, 19, label, {
+          fontFamily: "monospace",
+          fontSize: "10px",
+          fontStyle: "bold",
+          color: "#4A3A2A",
+        })
+        .setOrigin(0.5);
+
+      const button = this.add
+        .container(x, y, [hitArea, bg, iconText, labelText])
+        .setSize(100, 76)
+        .setScrollFactor(0)
+        .setDepth(DEPTH.hud + 30)
+        .setInteractive(
+          new Phaser.Geom.Rectangle(-56, -44, 112, 88),
+          Phaser.Geom.Rectangle.Contains,
+        );
+
+      button.on("pointerdown", () => {
+        if (this.controlsLocked || this.isPaused || this.isGameOver) return;
+
+        button.setScale(0.94);
+        onPress();
+      });
+
+      const release = () => {
+        button.setScale(1);
+        onRelease?.();
+      };
+
+      button.on("pointerup", release);
+      button.on("pointerout", release);
+      button.on("pointerupoutside", release);
+      button.on("pointercancel", release);
+
+      return button;
+    };
+
+    const duckButton = makeButton(
+      76,
+      "↓",
+      "TUNDUK",
+      0x9b8cff,
+      () => {
+        this.mobileSlideHeld = true;
+      },
+      () => {
+        this.mobileSlideHeld = false;
+      },
+    );
+
+    const jumpButton = makeButton(width - 76, "↑", "LOMPAT", 0xffc857, () => {
+      this.mobileJumpQueued = true;
+      this.lastJumpPressedAt = this.time.now;
+    });
+
+    this.mobileControls = this.add
+      .container(0, 0, [duckButton, jumpButton])
+      .setScrollFactor(0)
+      .setDepth(DEPTH.hud + 30);
+  }
+
+  private syncMobileControls() {
+    if (this.shouldShowMobileControls()) {
+      this.createMobileControls();
+      return;
+    }
+
+    this.destroyMobileControls();
+  }
+
   create() {
     this.cameras.main.setBackgroundColor("#DFF4FF");
     this.cameras.main.roundPixels = true;
@@ -1076,6 +1234,14 @@ export class MainScene extends Phaser.Scene {
     this.createHudButton(width - 24, height - 66, "?", () =>
       this.showHowToPlayModal(),
     );
+
+    this.createMobileControls();
+
+    this.scale.on("resize", this.syncMobileControls, this);
+    this.events.once("shutdown", () => {
+      this.scale.off("resize", this.syncMobileControls, this);
+      this.destroyMobileControls();
+    });
 
     this.incomingNotice = new IncomingNotice(this, width);
     this.eventFeed = new EventFeed(this, width, height);
@@ -1216,7 +1382,7 @@ export class MainScene extends Phaser.Scene {
     if (this.isBossStage && Math.random() < 0.35) {
       isBoss = true;
       kind = "boss";
-      rawWord = "Tagihan Besar";
+      rawWord = this.pickBossLabel();
       tex = "tex_boss";
       velocityX = GAMEPLAY.bossObstacleSpeed;
       lane = Math.random() < GAMEPLAY.bossDuckLaneChance ? "duck" : "ground";
@@ -1787,6 +1953,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.emitter.stop();
+    this.destroyMobileControls();
 
     const finalScore = this.getFinalScore();
     const highScore = this.resolvePersonalHighScore(finalScore);
@@ -1827,7 +1994,7 @@ export class MainScene extends Phaser.Scene {
     const titleText = this.createModalText(
       cx,
       cy - 153,
-      isWin ? "MENYALA, WIR! 👑" : "BONCOS PARAH! 💀",
+      isWin ? "MAHKOTAMU, KING! 👑" : "BONCOS PARAH! 💀",
       {
         fontSize: "38px",
         fontStyle: "bold",
@@ -1999,8 +2166,11 @@ export class MainScene extends Phaser.Scene {
         this.lastGroundedAt = now;
       }
 
-      const wantsToSlide = Boolean(this.cursors.down?.isDown);
+      const wantsToSlide =
+        Boolean(this.cursors.down?.isDown) || this.mobileSlideHeld;
+      const mobileJumpJustPressed = this.consumeMobileJumpQueued();
       const jumpJustPressed =
+        mobileJumpJustPressed ||
         Boolean(
           this.cursors.space &&
           Phaser.Input.Keyboard.JustDown(this.cursors.space),
@@ -2076,7 +2246,7 @@ export class MainScene extends Phaser.Scene {
             this.bossAvoided += 1;
             this.scorePoints += GAMEPLAY.pointsPerBossAvoided;
             this.updateScoreText();
-            this.eventFeed.push("Boss escaped", "good");
+            this.eventFeed.push(`Avoided ${label}`, "good");
           }
 
           this.destroyEntity(entity);

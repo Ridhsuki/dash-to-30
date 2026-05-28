@@ -498,6 +498,7 @@ export default function MenuActions() {
                       referrerPolicy="no-referrer"
                       fill
                       className="object-cover"
+                      sizes="(max-width: 768px) 40px, 64px"
                     />
                   </div>
                 ) : (
