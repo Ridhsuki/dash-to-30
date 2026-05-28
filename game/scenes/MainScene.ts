@@ -64,6 +64,7 @@ export class MainScene extends Phaser.Scene {
   isGameOver: boolean = false;
   isPaused: boolean = false;
   pauseOverlay?: Phaser.GameObjects.Container;
+  receiptOverlay?: Phaser.GameObjects.Container;
 
   lastGroundedAt: number = 0;
   lastJumpPressedAt: number = 0;
@@ -92,6 +93,7 @@ export class MainScene extends Phaser.Scene {
     this.isSliding = false;
     this.isPaused = false;
     this.pauseOverlay = undefined;
+    this.receiptOverlay = undefined;
 
     this.balance = GAMEPLAY.startingBalance;
     this.day = 1;
@@ -413,21 +415,108 @@ export class MainScene extends Phaser.Scene {
     const button = this.add
       .text(x, y, label, {
         fontFamily: "monospace",
-        fontSize: "18px",
+        fontSize: "16px",
         fontStyle: "bold",
         color,
         backgroundColor,
-        padding: { x: 16, y: 10 },
+        padding: { x: 16, y: 9 },
       })
       .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 3)
+      .setDepth(DEPTH.overlay + 6)
       .setInteractive({ useHandCursor: true });
 
-    button.on("pointerover", () => button.setScale(1.06));
-    button.on("pointerout", () => button.setScale(1));
+    button.on("pointerover", () => {
+      button.setScale(1.06);
+      button.setAlpha(0.96);
+    });
+
+    button.on("pointerout", () => {
+      button.setScale(1);
+      button.setAlpha(1);
+    });
+
     button.on("pointerdown", onClick);
 
     return button;
+  }
+
+  private createModalCard(
+    cx: number,
+    cy: number,
+    width: number,
+    height: number,
+    borderColor: number,
+  ) {
+    const shadow = this.add.graphics();
+    shadow.fillStyle(0x4a3a2a, 0.24);
+    shadow.fillRoundedRect(
+      -width / 2 + 10,
+      -height / 2 + 12,
+      width,
+      height,
+      28,
+    );
+
+    const card = this.add.graphics();
+    card.fillStyle(0xfff6e8, 0.98);
+    card.fillRoundedRect(-width / 2, -height / 2, width, height, 28);
+    card.lineStyle(5, borderColor, 1);
+    card.strokeRoundedRect(-width / 2, -height / 2, width, height, 28);
+
+    const header = this.add.graphics();
+    header.fillStyle(0xfff1c7, 1);
+    header.fillRoundedRect(
+      -width / 2 + 20,
+      -height / 2 + 18,
+      width - 40,
+      62,
+      22,
+    );
+    header.lineStyle(2, 0x8b5e3c, 0.35);
+    header.strokeRoundedRect(
+      -width / 2 + 20,
+      -height / 2 + 18,
+      width - 40,
+      62,
+      22,
+    );
+
+    const dotLeft = this.add.circle(
+      -width / 2 + 34,
+      -height / 2 + 34,
+      6,
+      0xff7aa2,
+      1,
+    );
+    const dotRight = this.add.circle(
+      width / 2 - 34,
+      -height / 2 + 34,
+      6,
+      0x6fd08c,
+      1,
+    );
+
+    return this.add
+      .container(cx, cy, [shadow, card, header, dotLeft, dotRight])
+      .setDepth(DEPTH.overlay + 1)
+      .setScrollFactor(0);
+  }
+
+  private createModalText(
+    x: number,
+    y: number,
+    value: string,
+    options: Phaser.Types.GameObjects.Text.TextStyle,
+  ) {
+    return this.add
+      .text(x, y, value, {
+        fontFamily: "monospace",
+        align: "center",
+        ...options,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.overlay + 5)
+      .setScrollFactor(0);
   }
 
   private showPauseMenu() {
@@ -445,36 +534,33 @@ export class MainScene extends Phaser.Scene {
     const cy = this.scale.height / 2;
 
     const backdrop = this.add
-      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.72)
-      .setDepth(DEPTH.overlay);
+      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.68)
+      .setDepth(DEPTH.overlay)
+      .setScrollFactor(0);
 
-    const panel = this.add
-      .rectangle(cx, cy, 430, 305, 0xfff6e8, 0.98)
-      .setStrokeStyle(4, 0xffc857, 1)
-      .setDepth(DEPTH.overlay + 1);
+    const card = this.createModalCard(cx, cy, 470, 318, 0xffc857);
 
-    const title = this.add
-      .text(cx, cy - 108, "PAUSED", {
-        fontFamily: "monospace",
-        fontSize: "36px",
-        fontStyle: "bold",
-        color: "#4A3A2A",
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
 
-    const subtitle = this.add
-      .text(cx, cy - 72, "Dompet tarik napas dulu.", {
-        fontFamily: "monospace",
+    const title = this.createModalText(cx, cy - 111, "PAUSED", {
+      fontSize: "38px",
+      fontStyle: "bold",
+      color: "#4A3A2A",
+    });
+
+    const subtitle = this.createModalText(
+      cx,
+      cy - 52,
+      "Dompet tarik napas dulu.",
+      {
         fontSize: "14px",
         color: "#8B5E3C",
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
+        wordWrap: { width: 380, useAdvancedWrap: true },
+      },
+    );
 
     const resume = this.createMenuButton(
       cx,
-      cy - 20,
+      cy + 8,
       "RESUME RUN",
       "#4A3A2A",
       "#6FD08C",
@@ -482,8 +568,8 @@ export class MainScene extends Phaser.Scene {
     );
 
     const restart = this.createMenuButton(
-      cx,
-      cy + 34,
+      cx - 96,
+      cy + 76,
       "RESTART",
       "#4A3A2A",
       "#FFC857",
@@ -494,8 +580,8 @@ export class MainScene extends Phaser.Scene {
     );
 
     const quit = this.createMenuButton(
-      cx,
-      cy + 88,
+      cx + 96,
+      cy + 76,
       "HOME",
       "#FFF6E8",
       "#FF6B6B",
@@ -512,7 +598,7 @@ export class MainScene extends Phaser.Scene {
     this.pauseOverlay = this.add
       .container(0, 0, [
         backdrop,
-        panel,
+        card,
         title,
         subtitle,
         resume,
@@ -528,7 +614,7 @@ export class MainScene extends Phaser.Scene {
       alpha: 1,
       scaleX: 1,
       scaleY: 1,
-      duration: 180,
+      duration: 210,
       ease: "Back.easeOut",
     });
   }
@@ -1110,6 +1196,247 @@ export class MainScene extends Phaser.Scene {
     entity.destroy();
   }
 
+  private buildReceiptText(
+    isWin: boolean,
+    finalScore: number,
+    personalBest: number,
+  ) {
+    const playerIdentity = this.getPlayerIdentity();
+    const status = isWin ? "MONTH SURVIVED" : "BANKRUPT";
+    const advice = isWin ? this.getWinMessage() : this.getRoastMessage();
+
+    return [
+      "====== DASH TO 30 RECEIPT ======",
+      `PLAYER      : ${playerIdentity.name}`,
+      `STATUS      : ${status}`,
+      `DAY         : ${this.day}/${GAMEPLAY.maxDay}`,
+      `RUN SCORE   : ${finalScore}`,
+      `BEST SCORE  : ${personalBest}`,
+      `SALDO AKHIR : ${this.formatCurrency(this.balance)}`,
+      "-------------------------------",
+      `NEEDS TAKEN : ${this.needsTaken}`,
+      `MISSED NEED : ${this.missedNeeds}`,
+      `WANTS HIT   : ${this.wantsHit}`,
+      `WANTS DODGE : ${this.wantsAvoided}`,
+      `BOSS HIT    : ${this.bossHits}`,
+      `BOSS DODGE  : ${this.bossAvoided}`,
+      "-------------------------------",
+      isWin ? `ADVICE: ${advice}` : `AI ROAST: ${advice}`,
+      "===============================",
+      "Play Dash to 30 and survive your wallet.",
+    ].join("\n");
+  }
+
+  private async shareReceiptText(
+    isWin: boolean,
+    finalScore: number,
+    personalBest: number,
+  ) {
+    const receiptText = this.buildReceiptText(isWin, finalScore, personalBest);
+
+    if (typeof window === "undefined") return;
+
+    try {
+      const nav = window.navigator as Navigator & {
+        share?: (data: { title?: string; text?: string }) => Promise<void>;
+      };
+
+      if (nav.share) {
+        await nav.share({
+          title: "Dash to 30 Receipt",
+          text: receiptText,
+        });
+
+        this.eventFeed?.push("Receipt shared", "good");
+        return;
+      }
+
+      if (window.navigator.clipboard?.writeText) {
+        await window.navigator.clipboard.writeText(receiptText);
+        this.eventFeed?.push("Receipt copied", "good");
+      }
+    } catch (error) {
+      console.error("Failed to share receipt", error);
+      this.eventFeed?.push("Share failed", "bad");
+    }
+  }
+
+  private hideReceiptModal() {
+    this.receiptOverlay?.destroy(true);
+    this.receiptOverlay = undefined;
+  }
+
+  private showReceiptModal(
+    isWin: boolean,
+    finalScore: number,
+    personalBest: number,
+  ) {
+    this.hideReceiptModal();
+
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const receiptWidth = Math.min(430, this.scale.width - 64);
+    const receiptHeight = Math.min(392, this.scale.height - 36);
+    const x0 = cx - receiptWidth / 2;
+    const y0 = cy - receiptHeight / 2;
+
+    const backdrop = this.add
+      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.52)
+      .setDepth(DEPTH.overlay + 10)
+      .setScrollFactor(0);
+
+    const paper = this.add.graphics();
+    paper.fillStyle(0xfffdf2, 1);
+    paper.fillRoundedRect(x0, y0, receiptWidth, receiptHeight, 18);
+    paper.lineStyle(3, 0x8b5e3c, 1);
+    paper.strokeRoundedRect(x0, y0, receiptWidth, receiptHeight, 18);
+
+    paper.lineStyle(1, 0x8b5e3c, 0.35);
+    for (let x = x0 + 18; x < x0 + receiptWidth - 18; x += 18) {
+      paper.lineBetween(x, y0 + 46, x + 9, y0 + 46);
+      paper.lineBetween(
+        x,
+        y0 + receiptHeight - 58,
+        x + 9,
+        y0 + receiptHeight - 58,
+      );
+    }
+
+    const children: Phaser.GameObjects.GameObject[] = [backdrop, paper];
+
+    const addText = (
+      x: number,
+      y: number,
+      value: string,
+      size = "12px",
+      color = "#4A3A2A",
+      originX = 0.5,
+    ) => {
+      const textObject = this.add
+        .text(x, y, value, {
+          fontFamily: "monospace",
+          fontSize: size,
+          fontStyle: "bold",
+          color,
+          align: originX === 0.5 ? "center" : "left",
+          wordWrap: { width: receiptWidth - 54, useAdvancedWrap: true },
+        })
+        .setOrigin(originX, 0.5)
+        .setDepth(DEPTH.overlay + 12)
+        .setScrollFactor(0);
+
+      children.push(textObject);
+      return textObject;
+    };
+
+    const addRow = (label: string, value: string, y: number) => {
+      const left = this.add
+        .text(x0 + 28, y, label, {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "#8B5E3C",
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(DEPTH.overlay + 12)
+        .setScrollFactor(0);
+
+      const right = this.add
+        .text(x0 + receiptWidth - 28, y, value, {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          fontStyle: "bold",
+          color: "#4A3A2A",
+          align: "right",
+        })
+        .setOrigin(1, 0.5)
+        .setDepth(DEPTH.overlay + 12)
+        .setScrollFactor(0);
+
+      children.push(left, right);
+    };
+
+    const playerIdentity = this.getPlayerIdentity();
+    const status = isWin ? "SURVIVED" : "BANKRUPT";
+    const advice = isWin ? this.getWinMessage() : this.getRoastMessage();
+
+    addText(cx, y0 + 25, "DASH TO 30 RECEIPT", "16px", "#4A3A2A");
+    addText(
+      cx,
+      y0 + 56,
+      "MINIMARKET OF QUESTIONABLE CHOICES",
+      "9px",
+      "#8B5E3C",
+    );
+
+    let rowY = y0 + 76;
+    addRow("PLAYER", playerIdentity.name, rowY);
+    rowY += 20;
+    addRow("STATUS", status, rowY);
+    rowY += 20;
+    addRow("DAY", `${this.day}/${GAMEPLAY.maxDay}`, rowY);
+    rowY += 20;
+    addRow("RUN SCORE", String(finalScore), rowY);
+    rowY += 20;
+    addRow("PERSONAL BEST", String(personalBest), rowY);
+    rowY += 20;
+    addRow("SALDO", this.formatCurrency(this.balance), rowY);
+    rowY += 26;
+    addRow("NEEDS TAKEN", String(this.needsTaken), rowY);
+    rowY += 20;
+    addRow("MISSED NEED", String(this.missedNeeds), rowY);
+    rowY += 20;
+    addRow("WANTS DODGED", String(this.wantsAvoided), rowY);
+    rowY += 20;
+    addRow("WANTS HIT", String(this.wantsHit), rowY);
+    rowY += 20;
+    addRow("BOSS DODGED", String(this.bossAvoided), rowY);
+
+    addText(
+      cx,
+      y0 + receiptHeight - 84,
+      isWin ? `CATATAN: ${advice}` : `AI ROAST: ${advice}`,
+      "11px",
+      "#4A3A2A",
+    );
+
+    const shareBtn = this.createMenuButton(
+      cx - 88,
+      y0 + receiptHeight - 28,
+      "COPY",
+      "#4A3A2A",
+      "#6FD08C",
+      () => {
+        void this.shareReceiptText(isWin, finalScore, personalBest);
+      },
+    );
+
+    const closeBtn = this.createMenuButton(
+      cx + 88,
+      y0 + receiptHeight - 28,
+      "CLOSE",
+      "#FFF6E8",
+      "#8B5E3C",
+      () => this.hideReceiptModal(),
+    );
+
+    children.push(shareBtn, closeBtn);
+
+    this.receiptOverlay = this.add
+      .container(0, 0, children)
+      .setDepth(DEPTH.overlay + 10)
+      .setAlpha(0)
+      .setScale(0.96);
+
+    this.tweens.add({
+      targets: this.receiptOverlay,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 220,
+      ease: "Back.easeOut",
+    });
+  }
+
   triggerGameOver(isWin: boolean) {
     if (this.isGameOver) return;
 
@@ -1128,6 +1455,8 @@ export class MainScene extends Phaser.Scene {
 
     const finalScore = this.getFinalScore();
     const highScore = this.resolvePersonalHighScore(finalScore);
+    const personalBest = Math.max(highScore.previousBest, finalScore);
+    const playerIdentity = this.getPlayerIdentity();
 
     EventBus.emit("game-over", {
       score: finalScore,
@@ -1137,9 +1466,6 @@ export class MainScene extends Phaser.Scene {
       needsTaken: this.needsTaken,
       wantsAvoided: this.wantsAvoided,
       bossAvoided: this.bossAvoided,
-      wantsHit: this.wantsHit,
-      missedNeeds: this.missedNeeds,
-      bossHits: this.bossHits,
       essentialLife: this.essentialLife,
       isNewPersonalHighScore: highScore.isNewHighScore,
       previousPersonalBest: highScore.previousBest,
@@ -1147,117 +1473,97 @@ export class MainScene extends Phaser.Scene {
 
     const cx = this.scale.width / 2;
     const cy = this.scale.height / 2;
-
-    this.add
-      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.78)
-      .setDepth(DEPTH.overlay);
-
-    const panel = this.add
-      .rectangle(cx, cy, 620, 360, 0xfff6e8, 0.98)
-      .setStrokeStyle(5, isWin ? 0x6fd08c : 0xff6b6b, 1)
-      .setDepth(DEPTH.overlay + 1);
-
-    const title = isWin ? "MENYALA, WIR! 👑" : "BONCOS PARAH! 💀";
+    const borderColor = isWin ? 0x6fd08c : 0xff6b6b;
     const titleColor = isWin ? "#6FD08C" : "#FF6B6B";
 
-    const titleText = this.add
-      .text(cx, cy - 130, title, {
-        fontSize: "42px",
+    this.add
+      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.74)
+      .setDepth(DEPTH.overlay)
+      .setScrollFactor(0);
+
+    const card = this.createModalCard(cx, cy, 650, 404, borderColor);
+
+    const icon = this.createModalText(cx - 270, cy - 153, isWin ? "🎉" : "🧾", {
+      fontSize: "23px",
+      color: "#4A3A2A",
+    });
+
+    const titleText = this.createModalText(
+      cx,
+      cy - 153,
+      isWin ? "MENYALA, WIR! 👑" : "BONCOS PARAH! 💀",
+      {
+        fontSize: "38px",
+        fontStyle: "bold",
         color: titleColor,
-        fontFamily: "monospace",
-        fontStyle: "bold",
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
+      },
+    );
 
-    const personalBest = Math.max(highScore.previousBest, finalScore);
+    const scoreLabel = highScore.isNewHighScore
+      ? "NEW PERSONAL BEST!"
+      : `RUN SCORE: ${finalScore}`;
 
-    const highScoreText = highScore.isNewHighScore
-      ? `NEW PERSONAL BEST!`
-      : `RUN SCORE: ${finalScore} | PERSONAL BEST: ${personalBest}`;
+    const scoreText = this.createModalText(cx, cy - 82, scoreLabel, {
+      fontSize: "18px",
+      fontStyle: "bold",
+      color: "#4A3A2A",
+      backgroundColor: "#FFF1C7",
+      padding: { x: 14, y: 7 },
+    });
 
-    const scoreText = this.add
-      .text(cx, cy - 84, highScoreText, {
-        fontSize: "18px",
-        color: "#4A3A2A",
-        backgroundColor: "#FFF1C7",
-        padding: { x: 12, y: 6 },
-        fontFamily: "monospace",
-        fontStyle: "bold",
-        align: "center",
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
-
-    const scoreHelpText = this.add
-      .text(
-        cx,
-        cy - 59,
-        highScore.isNewHighScore
-          ? `Run score: ${finalScore} • Previous best: ${highScore.previousBest}`
-          : "Personal best is saved on this device. Login scores can enter Global Leaderboard.",
-        {
-          fontSize: "11px",
-          color: "#8B5E3C",
-          fontFamily: "monospace",
-          align: "center",
-          wordWrap: { width: 540, useAdvancedWrap: true },
-        },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
-
-    const playerIdentity = this.getPlayerIdentity();
-    const leaderboardMessage = playerIdentity.isLoggedIn
-      ? `Player: ${playerIdentity.name}`
-      : "Guest run: login to submit this score to Global Leaderboard.";
-
-    this.add
-      .text(cx, cy - 40, leaderboardMessage, {
-        fontSize: "13px",
+    const bestText = this.createModalText(
+      cx,
+      cy - 48,
+      highScore.isNewHighScore
+        ? `Previous Best: ${highScore.previousBest} • Current: ${finalScore}`
+        : `Personal Best: ${personalBest}`,
+      {
+        fontSize: "12px",
         color: "#8B5E3C",
-        fontFamily: "monospace",
-        align: "center",
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
+        wordWrap: { width: 540, useAdvancedWrap: true },
+      },
+    );
 
-    this.add
-      .text(
-        cx,
-        cy + 48,
-        `NEEDS TAKEN: ${this.needsTaken} | NEEDS MISSED: ${this.missedNeeds} | WANTS HIT: ${this.wantsHit} | WANTS AVOIDED: ${this.wantsAvoided}`,
-        {
-          fontSize: "15px",
-          color: "#4A3A2A",
-          fontFamily: "monospace",
-          align: "center",
-        },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
+    const identityText = this.createModalText(
+      cx,
+      cy - 24,
+      playerIdentity.isLoggedIn
+        ? `Player: ${playerIdentity.name}`
+        : "Guest run: login to submit score to Global Leaderboard.",
+      {
+        fontSize: "12px",
+        color: "#8B5E3C",
+        wordWrap: { width: 540, useAdvancedWrap: true },
+      },
+    );
 
-    const messageText = this.add
-      .text(
-        cx,
-        cy - 8,
-        isWin
-          ? `\n\n${this.getWinMessage()}\nRemaining Balance: ${this.formatCurrency(this.balance)}`
-          : `ROASTING AI: "${this.getRoastMessage()}"`,
-        {
-          fontSize: "15px",
-          color: "#4A3A2A",
-          fontFamily: "monospace",
-          align: "center",
-          wordWrap: { width: 520, useAdvancedWrap: true },
-        },
-      )
-      .setOrigin(0.5)
-      .setDepth(DEPTH.overlay + 2);
+    const mainMessage = isWin
+      ? this.getWinMessage()
+      : `AI ROAST: "${this.getRoastMessage()}"`;
+
+    const messageText = this.createModalText(cx, cy + 22, mainMessage, {
+      fontSize: "15px",
+      color: "#4A3A2A",
+      wordWrap: { width: 540, useAdvancedWrap: true },
+    });
+
+    const statsText = this.createModalText(
+      cx,
+      cy + 76,
+      `Needs: ${this.needsTaken}   Life: ${this.essentialLife}/${GAMEPLAY.maxEssentialLife}   Avoided: ${this.wantsAvoided}   Boss: ${this.bossAvoided}`,
+      {
+        fontSize: "13px",
+        fontStyle: "bold",
+        color: "#4A3A2A",
+        backgroundColor: "#FFF6E8",
+        padding: { x: 10, y: 5 },
+        wordWrap: { width: 560, useAdvancedWrap: true },
+      },
+    );
 
     const retryBtn = this.createMenuButton(
-      cx - 120,
-      cy + 112,
+      cx - 178,
+      cy + 142,
       "TRY AGAIN",
       "#4A3A2A",
       "#FFC857",
@@ -1267,9 +1573,18 @@ export class MainScene extends Phaser.Scene {
       },
     );
 
+    const receiptBtn = this.createMenuButton(
+      cx,
+      cy + 142,
+      "VIEW RECEIPT",
+      "#4A3A2A",
+      "#6FD08C",
+      () => this.showReceiptModal(isWin, finalScore, personalBest),
+    );
+
     const homeBtn = this.createMenuButton(
-      cx + 120,
-      cy + 112,
+      cx + 178,
+      cy + 142,
       "HOME",
       "#FFF6E8",
       "#8B5E3C",
@@ -1285,23 +1600,28 @@ export class MainScene extends Phaser.Scene {
 
     const endContainer = this.add
       .container(0, 0, [
-        panel,
+        card,
+        icon,
         titleText,
         scoreText,
+        bestText,
+        identityText,
         messageText,
+        statsText,
         retryBtn,
+        receiptBtn,
         homeBtn,
       ])
       .setDepth(DEPTH.overlay + 1)
       .setAlpha(0)
-      .setScale(0.94);
+      .setScale(0.92);
 
     this.tweens.add({
       targets: endContainer,
       alpha: 1,
       scaleX: 1,
       scaleY: 1,
-      duration: 220,
+      duration: 240,
       ease: "Back.easeOut",
     });
 
