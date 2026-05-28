@@ -84,6 +84,7 @@ export class MainScene extends Phaser.Scene {
   hasCollectedInitialPayday: boolean = false;
   controlsLocked: boolean = true;
   gameSpeedMultiplier: number = 1;
+  runId: string = "";
 
   constructor() {
     super("MainScene");
@@ -114,6 +115,7 @@ export class MainScene extends Phaser.Scene {
     this.hasCollectedInitialPayday = false;
     this.controlsLocked = true;
     this.gameSpeedMultiplier = 1;
+    this.runId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     this.lastGroundedAt = 0;
     this.lastJumpPressedAt = 0;
@@ -1792,6 +1794,7 @@ export class MainScene extends Phaser.Scene {
     const playerIdentity = this.getPlayerIdentity();
 
     EventBus.emit("game-over", {
+      runId: this.runId,
       score: finalScore,
       balance: this.balance,
       survivalDays: this.day,

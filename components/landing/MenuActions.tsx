@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import {
@@ -18,18 +18,18 @@ import {
   signInWithPopup,
   signOut,
 } from "firebase/auth";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import LeaderboardModal from "./LeaderboardModal";
+import LeaderboardSubmitToast from "./LeaderboardSubmitToast";
 import RoleSetupModal from "./RoleSetupModal";
 import GameWrapper from "@/components/GameWrapper";
 import { EventBus } from "@/game/EventBus";
-
-type GameOverPayload = {
-  score: number;
-  survivalDays: number;
-  isWin: boolean;
-};
+import {
+  createSubmitKey,
+  submitLeaderboardScore,
+  type GameOverPayload,
+  type LeaderboardSubmitState,
+} from "@/lib/leaderboard";
 
 export default function MenuActions() {
   const [user, setUser] = useState<User | null>(null);
@@ -48,27 +48,49 @@ export default function MenuActions() {
 
   const [gameStarted, setGameStarted] = useState(false);
   const [aiConfig, setAiConfig] = useState<any>(null);
+  const [submitStatus, setSubmitStatus] = useState<LeaderboardSubmitState>({
+    status: "idle",
+    title: "",
+    message: "",
+  });
+  const lastSubmittedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!gameStarted) return;
 
     const handleGameOver = async (data: GameOverPayload) => {
-      if (!user || !db) return;
+      const submitKey = createSubmitKey(user?.uid ?? "guest", data);
 
-      try {
-        await addDoc(collection(db, "highscores"), {
-          userId: user.uid,
-          username: user.displayName || user.email?.split("@")[0] || "Player",
-          score: Number(data.score) || 0,
-          survivalDays: Number(data.survivalDays) || 0,
-          isWin: Boolean(data.isWin),
-          timestamp: serverTimestamp(),
-        });
-
-        console.log("Skor berhasil disimpan ke Firebase!");
-      } catch (error) {
-        console.error("Gagal menyimpan skor:", error);
+      if (lastSubmittedKeyRef.current === submitKey) {
+        return;
       }
+
+      lastSubmittedKeyRef.current = submitKey;
+
+      if (!user) {
+        setSubmitStatus({
+          status: "guest",
+          title: "Skor tersimpan lokal",
+          message: "Login untuk mengirim skor ke Global Leaderboard.",
+          score: Number(data.score) || 0,
+        });
+        return;
+      }
+
+      setSubmitStatus({
+        status: "submitting",
+        title: "Mengirim skor...",
+        message: "Menyimpan hasil run ke Global Leaderboard.",
+        score: Number(data.score) || 0,
+      });
+
+      const result = await submitLeaderboardScore({
+        db,
+        user,
+        payload: data,
+      });
+
+      setSubmitStatus(result);
     };
 
     EventBus.on("game-over", handleGameOver);
@@ -79,6 +101,11 @@ export default function MenuActions() {
   }, [gameStarted, user]);
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -135,6 +162,15 @@ export default function MenuActions() {
   };
 
   const handleGoogleLogin = async () => {
+    if (!auth) {
+      setAuthError("other");
+      setAuthErrorDetails({
+        code: "FIREBASE_NOT_CONFIGURED",
+        message: "Firebase env belum lengkap. Cek file .env.local.",
+      });
+      return;
+    }
+
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
 
@@ -172,6 +208,8 @@ export default function MenuActions() {
   };
 
   const handleLogout = async () => {
+    if (!auth) return;
+
     try {
       await signOut(auth);
 
@@ -193,6 +231,16 @@ export default function MenuActions() {
 
   return (
     <div className="space-y-3 sm:space-y-3.5">
+      <LeaderboardSubmitToast
+        state={submitStatus}
+        onDismiss={() =>
+          setSubmitStatus({
+            status: "idle",
+            title: "",
+            message: "",
+          })
+        }
+      />
       {authError && (
         <div className="fixed inset-0 bg-[#4A3A2A]/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="relative w-full max-w-md bg-[#FFF6E8] border-4 border-[#8B5E3C] rounded-3xl p-6 shadow-[0_16px_32px_rgba(139,94,60,0.3)] text-left font-mono">

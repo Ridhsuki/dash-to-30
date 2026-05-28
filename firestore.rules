@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /highscores/{scoreId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.username is string
+        && request.resource.data.username.size() > 0
+        && request.resource.data.username.size() <= 32
+        && request.resource.data.score is int
+        && request.resource.data.score >= 1
+        && request.resource.data.score <= 10000000
+        && request.resource.data.survivalDays is int
+        && request.resource.data.survivalDays >= 1
+        && request.resource.data.survivalDays <= 30
+        && request.resource.data.isWin is bool
+        && request.resource.data.timestamp == request.time;
+
+      allow update, delete: if false;
+    }
+  }
+}

@@ -7,7 +7,6 @@ class SafeEventBus {
     const callbacks = this.events.get(eventName) ?? new Set<EventCallback>();
     callbacks.add(callback);
     this.events.set(eventName, callbacks);
-
     return this;
   }
 

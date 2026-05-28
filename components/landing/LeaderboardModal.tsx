@@ -1,21 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  Trophy,
-  X,
+  AlertCircle,
+  Calendar,
+  Loader2,
   Medal,
   Sparkles,
-  Calendar,
-  AlertCircle,
+  Trophy,
+  X,
 } from "lucide-react";
 import {
   collection,
-  query,
-  orderBy,
   limit,
   onSnapshot,
+  orderBy,
+  query,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -31,19 +32,16 @@ interface LeaderboardModalProps {
   onClose: () => void;
 }
 
-// Gorgeous fallback dummy data matching the theme of late-month retail item shoppers
 const FALLBACK_SCORES: ScoreEntry[] = [
   { id: "mock1", username: "SuperSaver_99", score: 2840, survivalDays: 30 },
   { id: "mock2", username: "KopiAddictNoMore", score: 2450, survivalDays: 30 },
   { id: "mock3", username: "NeedsVWantMaster", score: 2100, survivalDays: 28 },
   { id: "mock4", username: "AntiPaylaterAgent", score: 1850, survivalDays: 26 },
   { id: "mock5", username: "CashKing", score: 1510, survivalDays: 24 },
-  { id: "mock6", username: "BudgetHero_A", score: 1200, survivalDays: 20 },
-  { id: "mock7", username: "MinimartChallenger", score: 980, survivalDays: 18 },
-  { id: "mock8", username: "SalarySurviver", score: 750, survivalDays: 15 },
-  { id: "mock9", username: "InstaWantRegrets", score: 320, survivalDays: 10 },
-  { id: "mock10", username: "PaylaterTrapVictim", score: 50, survivalDays: 4 },
 ];
+
+const useDemoLeaderboard =
+  process.env.NEXT_PUBLIC_USE_DEMO_LEADERBOARD === "true";
 
 export default function LeaderboardModal({
   isOpen,
@@ -52,88 +50,73 @@ export default function LeaderboardModal({
   const [mounted, setMounted] = useState(false);
   const [scores, setScores] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [usingFallback, setUsingFallback] = useState(false);
+  const [usingDemo, setUsingDemo] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Set mounted flag to true on the client to avoid hydration mismatch
   useEffect(() => {
-    const t = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(t);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    let unsubscribe = () => { };
+    setLoading(true);
+    setUsingDemo(false);
+    setErrorMessage("");
 
-    const timer = setTimeout(() => {
-      setLoading(true);
-      setUsingFallback(false);
+    if (!db) {
+      setScores(useDemoLeaderboard ? FALLBACK_SCORES : []);
+      setUsingDemo(useDemoLeaderboard);
+      setErrorMessage(
+        "Firebase belum terkonfigurasi. Cek .env.local dan restart dev server.",
+      );
+      setLoading(false);
+      return;
+    }
 
-      try {
-        if (!db) {
-          throw new Error("Firestore DB is not initialized");
-        }
+    const highscoresRef = collection(db, "highscores");
+    const leaderboardQuery = query(
+      highscoresRef,
+      orderBy("score", "desc"),
+      limit(10),
+    );
 
-        const highscoresRef = collection(db, "highscores");
-        const q = query(highscoresRef, orderBy("score", "desc"), limit(10));
+    const unsubscribe = onSnapshot(
+      leaderboardQuery,
+      (snapshot) => {
+        const liveScores = snapshot.docs.map((doc) => {
+          const data = doc.data();
 
-        unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            const snapshotScores: ScoreEntry[] = [];
-            snapshot.forEach((doc) => {
-              const data = doc.data();
-              snapshotScores.push({
-                id: doc.id,
-                username: data.username || "Anonymous Player",
-                score: Number(data.score) || 0,
-                survivalDays: Number(data.survivalDays) || 0,
-              });
-            });
+          return {
+            id: doc.id,
+            username: String(data.username || "Anonymous Player"),
+            score: Number(data.score) || 0,
+            survivalDays: Number(data.survivalDays) || 0,
+          };
+        });
 
-            if (snapshotScores.length > 0) {
-              setScores(snapshotScores);
-              setUsingFallback(false);
-            } else {
-              // If collection is empty, display dummy highscores as default seed values
-              setScores(FALLBACK_SCORES);
-              setUsingFallback(true);
-            }
-            setLoading(false);
-          },
-          (error) => {
-            console.warn(
-              "Firestore onSnapshot error, falling back to local demo scoring:",
-              error,
-            );
-            setScores(FALLBACK_SCORES);
-            setUsingFallback(true);
-            setLoading(false);
-          },
-        );
-      } catch (e) {
-        console.warn(
-          "Real-time listener setup caught error, using local demo scoring:",
-          e,
-        );
-        setScores(FALLBACK_SCORES);
-        setUsingFallback(true);
+        setScores(liveScores);
+        setUsingDemo(false);
+        setErrorMessage("");
         setLoading(false);
-      }
-    }, 0);
+      },
+      (error) => {
+        console.warn("Firestore leaderboard listener failed:", error);
 
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
-    };
+        setScores(useDemoLeaderboard ? FALLBACK_SCORES : []);
+        setUsingDemo(useDemoLeaderboard);
+        setErrorMessage(
+          "Leaderboard live belum bisa dibaca. Cek Firestore Database dan Security Rules.",
+        );
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
   }, [isOpen]);
 
-  // If not mounted yet or modal is closed, don't render anything
   if (!mounted || !isOpen) return null;
 
-  // Use React Portal to attach overlay directly to document.body
   return createPortal(
     <div
       id="leaderboard-backdrop"
@@ -178,7 +161,6 @@ export default function LeaderboardModal({
           <X className="w-4 h-4" />
         </button>
 
-        {/* Title Group */}
         <div className="text-center mt-3 mb-4 shrink-0">
           <h2 className="font-pixel text-2xl sm:text-3xl text-[#FF9F1C] font-bold drop-shadow-[0_2.5px_0_#8B5E3C] tracking-wide flex items-center justify-center gap-2">
             <Sparkles className="w-5 h-5 text-[#FFC857] animate-pulse" />
@@ -190,32 +172,41 @@ export default function LeaderboardModal({
           </p>
         </div>
 
-        {/* Using Demo/Temporary Mock Alert when sandbox domain isn't fully configured */}
-        {usingFallback && (
-          <div className="mb-3.5 bg-[#FFF2DA] border border-[#FF9F1C]/40 rounded-xl p-2 sm:p-2.5 flex items-start gap-2 text-left shrink-0">
-            <AlertCircle className="w-4 h-4 text-[#FF9F1C] shrink-0 mt-0.5" />
-            <div className="text-[8px] sm:text-[9px] font-mono text-[#4A3A2A]/80 leading-normal font-bold uppercase py-0.5">
-              <span>
-                SHOWING DEMO RANKINGS. INTEGRATE CLOUD DB TO RENDER LIVE
-                SUBMISSIONS!
-              </span>
-            </div>
+        {usingDemo && (
+          <div className="relative z-10 mt-5 flex gap-2 rounded-2xl border-2 border-[#FFC857] bg-[#FFF1C7] p-3 text-[10px] font-bold text-[#8B5E3C]">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#FF9F1C]" />
+            Mode demo aktif. Set NEXT_PUBLIC_USE_DEMO_LEADERBOARD=false untuk
+            hanya menampilkan data Firestore.
           </div>
         )}
 
-        {/* Main Score List */}
-        <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[58vh] scrollbar-thin scrollbar-thumb-pink">
+        {errorMessage && !usingDemo && (
+          <div className="relative z-10 mt-5 flex gap-2 rounded-2xl border-2 border-[#FF6B6B] bg-white p-3 text-[10px] font-bold text-[#8B5E3C]">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#FF6B6B]" />
+            {errorMessage}
+          </div>
+        )}
+
+        <div className="relative z-10 mt-5 space-y-2">
           {loading ? (
-            <div className="py-12 text-center text-xs font-mono font-bold text-[#4A3A2A]/40 uppercase tracking-widest">
-              MENGAMBIL DATA SKOR...
+            <div className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#8B5E3C]/40 bg-white/60 p-6 text-xs font-bold text-[#8B5E3C]">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Mengambil skor live...
             </div>
           ) : scores.length === 0 ? (
-            <div className="py-12 text-center text-xs font-mono font-bold text-[#4A3A2A]/40 uppercase tracking-widest bg-[#FFF1C7]/30 border border-[#8B5E3C]/20 rounded-2xl">
-              NO SUBMISSIONS YET!
+            <div className="p-12 text-center text-xs font-mono font-bold text-[#4A3A2A]/40 uppercase tracking-widest bg-[#FFF1C7]/30 border border-[#8B5E3C]/20 rounded-2xl">
+              <Trophy className="mx-auto mb-2 h-6 w-6 text-[#FFC857]" />
+              <p className="font-pixel text-xs font-black uppercase">
+                Belum ada skor live
+              </p>
+              <p className="mt-2 text-[10px] font-bold text-[#8B5E3C]">
+                Login, mainkan run, lalu selesaikan game untuk mengirim skor.
+              </p>
             </div>
           ) : (
             scores.map((entry, index) => {
               const rank = index + 1;
+              const isTopThree = rank <= 3;
               let rankBg = "bg-white";
               let rankTextColor = "text-[#4A3A2A]";
               let rankBadge = null;
@@ -237,32 +228,42 @@ export default function LeaderboardModal({
               return (
                 <div
                   key={entry.id}
-                  className={`flex items-center justify-between border-2 border-[#8B5E3C]/30 rounded-xl p-2.5 transition-all hover:translate-x-[2px] ${rankBg}`}
+                  className={`flex items-center justify-between rounded-2xl border-2 bg-white px-3 py-3 shadow-[0_3px_0_rgba(139,94,60,0.35)] ${rank === 1
+                    ? "border-[#FFC857] bg-[#FFF1C7]"
+                    : "border-[#8B5E3C]/35"
+                    }`}
                 >
-                  {/* Left rank label & Avatar */}
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span
                       className={`w-6 h-6 rounded-lg border-2 border-[#8B5E3C] flex items-center justify-center font-pixel text-xs ${rank <= 3 ? "bg-white" : "bg-[#FFF1C7]/50"} ${rankTextColor}`}
                     >
                       {rank}
                     </span>
-                    <div className="flex flex-col text-left">
-                      <span className="font-pixel text-[10px] sm:text-xs text-[#4A3A2A] font-bold tracking-tight">
-                        {entry.username}
-                      </span>
-                      <span className="text-[7px] font-mono text-[#4A3A2A]/50 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                        <Calendar className="w-2.5 h-2.5" /> Survived:{" "}
-                        {entry.survivalDays}/30 Days
-                      </span>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <p className="font-pixel text-[10px] sm:text-xs text-[#4A3A2A] font-bold tracking-tight">
+                          {entry.username}
+                        </p>
+                        {isTopThree && (
+                          <Medal className="h-3.5 w-3.5 text-[#FF9F1C]" />
+                        )}
+                      </div>
+
+                      <div className="mt-1 flex items-center gap-1 text-[9px] font-bold text-[#8B5E3C]">
+                        <Calendar className="h-3 w-3" />
+                        Survived {entry.survivalDays}/30 days
+                      </div>
                     </div>
                   </div>
 
-                  {/* Right hand score info */}
-                  <div className="flex items-center gap-1.5 font-mono text-right font-bold">
-                    {rankBadge}
-                    <span className="text-xs sm:text-sm text-[#4A3A2A]">
-                      ${entry.score.toLocaleString()}
-                    </span>
+                  <div className="text-right">
+                    <p className="font-pixel text-sm font-black text-[#4A3A2A]">
+                      {entry.score.toLocaleString("id-ID")}
+                    </p>
+                    <p className="text-[8px] font-bold uppercase text-[#8B5E3C]">
+                      score
+                    </p>
                   </div>
                 </div>
               );
