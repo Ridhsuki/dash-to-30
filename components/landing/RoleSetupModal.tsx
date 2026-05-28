@@ -40,21 +40,21 @@ export default function RoleSetupModal({
   const templates: ConfessionTemplate[] = [
     {
       id: 1,
-      label: "College Student (Iced Coffee)",
+      label: "Mahasiswa (anak kosan)",
       icon: <Coffee className="w-3.5 h-3.5 text-amber-600" />,
-      text: "I'm a college student living on strict pocket money, but I can't resist buying iced coffee every single day.",
+      text: "Saya mahasiswa yang dapat uang saku Rp800 ribu per bulan dari orang tua. Rp200 ribu dipakai buat kebutuhan kos, sisanya untuk makan, transport, dan kalau nugas di caffe.",
     },
     {
       id: 2,
-      label: "Corporate Employee (Paylater)",
+      label: "Karyawan (Checkout Terus)",
       icon: <ShoppingBag className="w-3.5 h-3.5 text-purple-600" />,
-      text: "I'm a corporate employee with a decent salary, but my money instantly vanishes into online shopping and paylater bills.",
+      text: "Saya karyawan dengan gaji Rp4 juta per bulan. Setelah bayar kos, makan, dan transport, sisa uang sering habis gara-gara checkout online dan cicilan paylater.",
     },
     {
       id: 3,
-      label: "Freelance Gamer (Gacha)",
+      label: "Freelancer (suka nge game)",
       icon: <Gamepad className="w-3.5 h-3.5 text-blue-600" />,
-      text: "I'm a freelancer with unstable income, yet I spend way too much on game top-ups and gacha banners.",
+      text: "Saya freelancer dengan penghasilan sekitar Rp2–5 juta per bulan tergantung project. Walau pemasukan nggak selalu stabil, saya sering tergoda buat top-up game dan gacha karakter baru.",
     },
   ];
 
@@ -136,8 +136,7 @@ export default function RoleSetupModal({
               <Flame className="w-5 h-5 text-[#FF6B6B] animate-pulse" />
             </h2>
             <p className="text-[9px] font-mono font-bold text-[#4A3A2A]/60 tracking-wider mt-1.5 normal-case">
-              Tell the AI your spending sins to generate custom lifestyle
-              obstacles!
+              Ceritakan kebiasaan borosmu ke AI untuk membuat tantangan hidup yang cocok dengan gaya hidupmu!
             </p>
           </div>
 
@@ -180,7 +179,7 @@ export default function RoleSetupModal({
                 rows={5}
                 disabled={isGenerating}
                 className="w-full flex-1 p-3.5 text-xs text-[#4A3A2A] font-mono bg-transparent outline-none resize-none placeholder-[#4A3A2A]/40 leading-relaxed overflow-y-auto disabled:cursor-not-allowed"
-                placeholder="Ex: I get paid on the first, but order takeaway food every single day and end up living on cup noodles after week 2..."
+                placeholder="Contoh: Gajian awal bulan, tapi tiap hari pesan makanan online sampai akhir bulan cuma bisa hemat ekstrem..."
                 value={confession}
                 onChange={(e) => setConfession(e.target.value)}
                 maxLength={400}
@@ -214,7 +213,7 @@ export default function RoleSetupModal({
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  AI IS JUDGING YOU...
+                  Analyzing...
                 </>
               ) : (
                 <>

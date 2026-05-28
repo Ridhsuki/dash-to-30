@@ -4,3 +4,8 @@
   --font-pixel: var(--font-pixel);
   --font-sans: var(--font-sans);
 }
+
+html,
+body {
+  overscroll-behavior: none;
+}

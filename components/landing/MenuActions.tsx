@@ -142,9 +142,10 @@ export default function MenuActions() {
       setAuthError(null);
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      console.error("Google Sign In Error:", error);
-
       const errCode = error?.code || "";
+      if (errCode === "auth/popup-closed-by-user") return;
+
+      console.error("Google Sign In Error:", error);
       const errMsg = error?.message || "";
 
       if (
@@ -288,24 +289,13 @@ export default function MenuActions() {
             </span>
           </button>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="group relative bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
-            >
-              <HelpCircle className="w-3.5 h-3.5 text-[#6FD08C]" />
-              <span>HOW TO PLAY</span>
-            </button>
-
-            <button
-              onClick={() => setIsRoleModalOpen(true)}
-              type="button"
-              className="group relative bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
-            >
-              <UserIcon className="w-3.5 h-3.5 text-[#9B8CFF]" />
-              <span>CHOOSE ROLE</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className="group relative w-full bg-[#FFF6E8] hover:bg-white text-[#4A3A2A] border-2 border-[#8B5E3C] border-b-4 border-b-[#8B5E3C] active:border-b-2 active:translate-y-[2px] cursor-pointer text-[9px] sm:text-[10px] font-pixel py-3.5 rounded-xl transition-all flex items-center justify-center gap-2.5 uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#FF9F1C]"
+          >
+            <HelpCircle className="w-4 h-4 text-[#6FD08C]" />
+            <span>HOW TO PLAY</span>
+          </button>
 
           <button
             onClick={() => setIsLeaderboardOpen(true)}

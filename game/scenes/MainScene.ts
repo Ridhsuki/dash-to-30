@@ -191,6 +191,13 @@ export class MainScene extends Phaser.Scene {
     });
   }
 
+  private formatCurrency(amount: number) {
+    const sign = amount < 0 ? "-" : "";
+    const value = Math.abs(Math.round(amount)).toLocaleString("id-ID");
+
+    return `${sign}Rp${value}K`;
+  }
+
   private getCurrentScore() {
     const balanceBonus = Math.max(
       0,
@@ -207,7 +214,7 @@ export class MainScene extends Phaser.Scene {
   private updateScoreText() {
     if (!this.scoreText) return;
 
-    this.scoreText.setText(`SCORE ${this.getCurrentScore()}`);
+    this.scoreText.setText(`SKOR ${this.getCurrentScore()}`);
   }
 
   private getPersonalHighScoreKey() {
@@ -286,7 +293,7 @@ export class MainScene extends Phaser.Scene {
     const roasts = this.aiConfig.roasts;
     const legacyRoast =
       this.aiConfig?.roast?.trim() ||
-      "Your wallet tried its best, but your spending had other plans.";
+      "Dompet kamu sudah berjuang, tapi keputusan belanjamu terlalu barbar.";
 
     const needsNeglected =
       this.missedNeeds >= 2 ||
@@ -320,7 +327,7 @@ export class MainScene extends Phaser.Scene {
   private getWinMessage() {
     return (
       this.aiConfig.roasts?.win ||
-      "You balanced needs and wants. Your wallet finally stopped crying."
+      "Mantap, kamu berhasil menahan godaan dan tetap ngurus kebutuhan."
     );
   }
 
@@ -363,7 +370,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     if (this.essentialLife <= 0 && this.hasCollectedInitialPayday) {
-      this.eventFeed.push("Needs ignored!", "bad");
+      this.eventFeed.push("Kebutuhan diabaikan!", "bad");
       this.triggerGameOver(false);
     }
   }
@@ -489,7 +496,7 @@ export class MainScene extends Phaser.Scene {
     const quit = this.createMenuButton(
       cx,
       cy + 88,
-      "QUIT TO HOME",
+      "HOME",
       "#FFF6E8",
       "#FF6B6B",
       () => {
@@ -700,11 +707,11 @@ export class MainScene extends Phaser.Scene {
     });
 
     this.balanceText = this.add
-      .text(20, 20, `BALANCE: $${this.balance}`, {
+      .text(20, 20, `SALDO: ${this.formatCurrency(this.balance)}`, {
         fontSize: "24px",
         color: "#4A3A2A",
         backgroundColor: "#FFF1C7",
-        padding: { x: 10, y: 5 },
+        padding: { x: 7, y: 5 },
         fontFamily: "monospace",
         fontStyle: "bold",
       })
@@ -732,7 +739,7 @@ export class MainScene extends Phaser.Scene {
     this.progressBar.update(this.day, GAMEPLAY.maxDay);
 
     this.scoreText = this.add
-      .text(width - 18, height - 24, `SCORE ${this.getCurrentScore()}`, {
+      .text(width - 18, height - 24, `SKOR ${this.getCurrentScore()}`, {
         fontFamily: "monospace",
         fontSize: "17px",
         fontStyle: "bold",
@@ -766,8 +773,8 @@ export class MainScene extends Phaser.Scene {
     this.incomingNotice = new IncomingNotice(this, width);
     this.eventFeed = new EventFeed(this, width, height);
 
-    this.eventFeed.push("Start from $0", "warning");
-    this.eventFeed.push("Grab payday first", "info");
+    this.eventFeed.push("Mulai dari Rp0", "warning");
+    this.eventFeed.push("Ambil saldo dulu", "info");
 
     this.physics.add.overlap(
       this.player,
@@ -830,7 +837,7 @@ export class MainScene extends Phaser.Scene {
     sprite.body.setSize(34, 34);
     sprite.body.setOffset(7, 7);
 
-    const labelData = compactEntityLabel("Payday", "payday");
+    const labelData = compactEntityLabel("Saldo masuk", "payday");
 
     sprite.label = new EntityLabel(
       this,
@@ -846,11 +853,11 @@ export class MainScene extends Phaser.Scene {
     sprite.isInitialPayday = true;
 
     this.incomingNotice.show(
-      "First Payday",
+      "Saldo masuk",
       "payday",
-      `+$${GAMEPLAY.initialPaydayAmount}`,
+      `${this.formatCurrency(GAMEPLAY.initialPaydayAmount)}`,
     );
-    this.eventFeed.push("Incoming payday", "good");
+    this.eventFeed.push("Saldo masuk", "good");
   }
 
   increaseDay() {
@@ -869,13 +876,13 @@ export class MainScene extends Phaser.Scene {
       this.cameras.main.flash(800, 255, 180, 90);
       this.background.pulseCrisis();
       this.createSpawnTimer(GAMEPLAY.crisisSpawnDelayMs);
-      this.eventFeed.push("Crisis phase!", "warning");
+      this.eventFeed.push("Fase krisis!", "warning");
     }
 
     if (this.day === GAMEPLAY.finalBossDay) {
       this.gameSpeedMultiplier = 1.48;
       this.createSpawnTimer(GAMEPLAY.bossSpawnDelayMs);
-      this.eventFeed.push("Final boss pressure!", "bad");
+      this.eventFeed.push("Tekanan akhir bulan!", "bad");
     }
 
     if (this.day >= GAMEPLAY.maxDay) {
@@ -902,7 +909,7 @@ export class MainScene extends Phaser.Scene {
     if (this.isBossStage && Math.random() < 0.35) {
       isBoss = true;
       kind = "boss";
-      rawWord = "Tax Audit";
+      rawWord = "Tagihan Besar";
       tex = "tex_boss";
       velocityX = GAMEPLAY.bossObstacleSpeed;
       lane = Math.random() < GAMEPLAY.bossDuckLaneChance ? "duck" : "ground";
@@ -912,13 +919,13 @@ export class MainScene extends Phaser.Scene {
       if (rand < 0.62) {
         isWant = true;
         kind = "want";
-        rawWord = pickRandomLabel(this.aiConfig.wants, "Debt");
+        rawWord = pickRandomLabel(this.aiConfig.wants, "Godaan");
         tex = "tex_want";
         lane = Math.random() < GAMEPLAY.wantDuckLaneChance ? "duck" : "ground";
       } else {
         isNeed = true;
         kind = "need";
-        rawWord = pickRandomLabel(this.aiConfig.needs, "Bill");
+        rawWord = pickRandomLabel(this.aiConfig.needs, "Kebutuhan");
         tex = "tex_need";
         lane = Math.random() < GAMEPLAY.needJumpLaneChance ? "jump" : "ground";
       }
@@ -997,11 +1004,11 @@ export class MainScene extends Phaser.Scene {
 
     const impactText =
       kind === "want"
-        ? `${GAMEPLAY.wantDamage < 0 ? "-" : "+"}$${Math.abs(GAMEPLAY.wantDamage)}`
+        ? this.formatCurrency(GAMEPLAY.wantDamage)
         : kind === "need"
-          ? `${GAMEPLAY.needCost < 0 ? "-" : "+"}$${Math.abs(GAMEPLAY.needCost)}`
+          ? this.formatCurrency(GAMEPLAY.needCost)
           : kind === "boss"
-            ? `${GAMEPLAY.bossDamage < 0 ? "-" : "+"}$${Math.abs(GAMEPLAY.bossDamage)}`
+            ? this.formatCurrency(GAMEPLAY.bossDamage)
             : "";
 
     this.incomingNotice.show(labelData.fullLabel, kind, impactText);
@@ -1076,9 +1083,9 @@ export class MainScene extends Phaser.Scene {
     if (payday.isInitialPayday) {
       this.hasCollectedInitialPayday = true;
       this.controlsLocked = false;
-      this.eventFeed.push(`Payday +$${amount}`, "good");
+      this.eventFeed.push(`Saldo ${this.formatCurrency(amount)}`, "good");
     } else {
-      this.eventFeed.push(`Bonus +$${amount}`, "good");
+      this.eventFeed.push(`Bonus ${this.formatCurrency(amount)}`, "good");
     }
 
     this.player.setTint(0x6fd08c);
@@ -1087,7 +1094,7 @@ export class MainScene extends Phaser.Scene {
 
   updateBalance(amount: number) {
     this.balance += amount;
-    this.balanceText.setText(`BALANCE: $${this.balance}`);
+    this.balanceText.setText(`SALDO: ${this.formatCurrency(this.balance)}`);
 
     if (this.balance <= 0 && this.hasCollectedInitialPayday) {
       this.balanceText.setColor("#FF6B6B");
@@ -1150,7 +1157,7 @@ export class MainScene extends Phaser.Scene {
       .setStrokeStyle(5, isWin ? 0x6fd08c : 0xff6b6b, 1)
       .setDepth(DEPTH.overlay + 1);
 
-    const title = isWin ? "MONTH SURVIVED!" : "BANKRUPT!";
+    const title = isWin ? "MENYALA, WIR! 👑" : "BONCOS PARAH! 💀";
     const titleColor = isWin ? "#6FD08C" : "#FF6B6B";
 
     const titleText = this.add
@@ -1235,8 +1242,8 @@ export class MainScene extends Phaser.Scene {
         cx,
         cy - 8,
         isWin
-          ? `${this.getWinMessage()} Wallet: $${this.balance}`
-          : `AI ROAST: "${this.getRoastMessage()}"`,
+          ? `\n\n${this.getWinMessage()}\nRemaining Balance: ${this.formatCurrency(this.balance)}`
+          : `ROASTING AI: "${this.getRoastMessage()}"`,
         {
           fontSize: "15px",
           color: "#4A3A2A",
@@ -1407,7 +1414,7 @@ export class MainScene extends Phaser.Scene {
             this.bossAvoided += 1;
             this.scorePoints += GAMEPLAY.pointsPerBossAvoided;
             this.updateScoreText();
-            this.eventFeed.push("Dodged boss", "good");
+            this.eventFeed.push("Boss escaped", "good");
           }
 
           this.destroyEntity(entity);

@@ -33,7 +33,7 @@ export class EventFeed {
       .rectangle(0, 0, 210, 106, GAME_RGB.cream, 0.9)
       .setStrokeStyle(2, GAME_RGB.gold, 0.9);
 
-    this.title = scene.add.text(-94, -46, "RECENT CASHFLOW", {
+    this.title = scene.add.text(-94, -46, "RECENT ACTIVITY", {
       fontFamily: "monospace",
       fontSize: "9px",
       fontStyle: "bold",

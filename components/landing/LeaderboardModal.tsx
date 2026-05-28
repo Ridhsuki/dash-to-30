@@ -65,7 +65,7 @@ export default function LeaderboardModal({
   useEffect(() => {
     if (!isOpen) return;
 
-    let unsubscribe = () => {};
+    let unsubscribe = () => { };
 
     const timer = setTimeout(() => {
       setLoading(true);
@@ -186,7 +186,7 @@ export default function LeaderboardModal({
             <Sparkles className="w-5 h-5 text-[#FFC857] animate-pulse" />
           </h2>
           <p className="text-[9px] font-mono font-bold text-[#4A3A2A]/60 tracking-wider mt-1.5">
-            DASH TO 30 BEST SURVIVAL PURSES
+            BEST SURVIVAL SCORES DASH TO 30
           </p>
         </div>
 
@@ -207,7 +207,7 @@ export default function LeaderboardModal({
         <div className="flex-1 overflow-y-auto pr-1 space-y-2 max-h-[58vh] scrollbar-thin scrollbar-thumb-pink">
           {loading ? (
             <div className="py-12 text-center text-xs font-mono font-bold text-[#4A3A2A]/40 uppercase tracking-widest">
-              COLLECTING SCORE RECORDS...
+              MENGAMBIL DATA SKOR...
             </div>
           ) : scores.length === 0 ? (
             <div className="py-12 text-center text-xs font-mono font-bold text-[#4A3A2A]/40 uppercase tracking-widest bg-[#FFF1C7]/30 border border-[#8B5E3C]/20 rounded-2xl">

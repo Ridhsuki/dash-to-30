@@ -60,11 +60,11 @@ export class IncomingNotice {
     const style = getEntityLabelStyle(kind);
     const prefix =
       kind === "want"
-        ? "AVOID"
+        ? "HINDARI"
         : kind === "need"
-          ? "TAKE"
+          ? "AMBIL"
           : kind === "boss"
-            ? "WARNING"
+            ? "WASPADA"
             : "BONUS";
 
     const impactColor = impactText.includes("+")
@@ -80,9 +80,7 @@ export class IncomingNotice {
       .setStrokeStyle(2, style.border, 1);
 
     this.title.setText(prefix).setColor(GAME_HEX.brown);
-
     this.body.setText(label.toUpperCase()).setColor(GAME_HEX.text);
-
     this.detail.setText(impactText).setColor(impactColor);
 
     this.container.setVisible(true).setAlpha(1).setY(78).setScale(0.98);

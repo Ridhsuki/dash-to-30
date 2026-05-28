@@ -17,20 +17,22 @@ export type GameAiConfig = {
 };
 
 const DEFAULT_ROASTS: RoastProfile = {
-  default: "Your wallet tried its best, but your spending had other plans.",
+  default:
+    "Dompet kamu bukan bocor lagi, ini sudah kayak keran rusak di akhir bulan.",
   tooManyWants:
-    "You gave every want a VIP pass, then acted shocked when your wallet left.",
+    "Keinginan kamu terlalu sering dipeluk. Kebutuhan cuma jadi figuran.",
   missedNeeds:
-    "You ignored basic needs like budgeting was a magic trick. It was not.",
-  bossHit: "The big bill arrived, and your wallet folded like a cheap receipt.",
+    "Kebutuhan pokok kamu tinggalin. Hemat boleh, tapi jangan pura-pura kebal lapar.",
+  bossHit:
+    "Tagihan besar datang, budget kamu langsung tiarap tanpa perlawanan.",
   lowBalance:
-    "Your balance did not disappear. It escaped for emotional safety.",
-  win: "You balanced needs and wants. Your wallet finally respects you.",
+    "Saldo habis bukan karena semesta jahat. Kadang keputusanmu saja terlalu pede.",
+  win: "Mantap, kamu berhasil menahan godaan dan tetap ngurus kebutuhan.",
 };
 
 const DEFAULT_CONFIG: GameAiConfig = {
-  wants: ["Coffee", "Gacha", "Paylater"],
-  needs: ["Rent", "Groceries"],
+  wants: ["Kopi", "Diskon", "Gacha"],
+  needs: ["Makan", "Kos"],
   roast: DEFAULT_ROASTS.default,
   roasts: DEFAULT_ROASTS,
 };
@@ -63,20 +65,11 @@ function normalizeRoasts(value: unknown, legacyRoast: string): RoastProfile {
     ),
     tooManyWants: normalizeRoast(
       source.tooManyWants,
-      legacyRoast || DEFAULT_ROASTS.tooManyWants,
+      DEFAULT_ROASTS.tooManyWants,
     ),
-    missedNeeds: normalizeRoast(
-      source.missedNeeds,
-      legacyRoast || DEFAULT_ROASTS.missedNeeds,
-    ),
-    bossHit: normalizeRoast(
-      source.bossHit,
-      legacyRoast || DEFAULT_ROASTS.bossHit,
-    ),
-    lowBalance: normalizeRoast(
-      source.lowBalance,
-      legacyRoast || DEFAULT_ROASTS.lowBalance,
-    ),
+    missedNeeds: normalizeRoast(source.missedNeeds, DEFAULT_ROASTS.missedNeeds),
+    bossHit: normalizeRoast(source.bossHit, DEFAULT_ROASTS.bossHit),
+    lowBalance: normalizeRoast(source.lowBalance, DEFAULT_ROASTS.lowBalance),
     win: normalizeRoast(source.win, DEFAULT_ROASTS.win),
   };
 }
@@ -92,7 +85,7 @@ export function normalizeAiConfig(value: unknown): GameAiConfig {
     ? source.wants
         .slice(0, 3)
         .map((item, index) =>
-          normalizeText(item, DEFAULT_CONFIG.wants[index] || "Debt", 16),
+          normalizeText(item, DEFAULT_CONFIG.wants[index] || "Godaan", 16),
         )
     : DEFAULT_CONFIG.wants;
 
@@ -100,7 +93,7 @@ export function normalizeAiConfig(value: unknown): GameAiConfig {
     ? source.needs
         .slice(0, 2)
         .map((item, index) =>
-          normalizeText(item, DEFAULT_CONFIG.needs[index] || "Bill", 16),
+          normalizeText(item, DEFAULT_CONFIG.needs[index] || "Kebutuhan", 16),
         )
     : DEFAULT_CONFIG.needs;
 
@@ -126,12 +119,12 @@ export function pickRandomLabel(labels: string[], fallback: string) {
 export function compactEntityLabel(label: string, kind: EntityKind) {
   const fallback =
     kind === "want"
-      ? "Want"
+      ? "Godaan"
       : kind === "need"
-        ? "Need"
+        ? "Kebutuhan"
         : kind === "boss"
-          ? "Boss"
-          : "Payday";
+          ? "Tagihan"
+          : "Gajian";
 
   const fullLabel = normalizeText(label, fallback, 42);
   const shortLabel =

@@ -18,20 +18,22 @@ interface GameConfigResponse {
 }
 
 const FALLBACK_ROASTS: RoastProfile = {
-  default: "Your wallet tried its best, but your spending had other plans.",
+  default:
+    "Dompet lo bukan bocor lagi, ini mah udah boncos kuadrat. Minimal sadar diri, ngab.",
   tooManyWants:
-    "You kept feeding every want like your wallet had unlimited lives.",
+    "Keinginan lo fomo banget didekep mulu, giliran kebutuhan cuma dicuekin kayak chat gebetan.",
   missedNeeds:
-    "You skipped basic needs like hunger accepts exposure as payment.",
-  bossHit: "The big bill arrived, and your budget was not wearing armor.",
+    "Kebutuhan pokok lo skip demi gengsi? Hemat kagak, nyiksa diri iya. Minimal hidup jangan mode bertahan pakai satu persen baterai, lah.",
+  bossHit:
+    "Begitu tagihan gede *drop*, mental budget lo langsung kena mental dan *out of pocket* banget.",
   lowBalance:
-    "Your balance hit zero with the confidence of someone ignoring receipts.",
-  win: "You balanced needs and wants. Your wallet finally stopped crying.",
+    "Saldo lo sekarat bukan takdir, tapi akibat kebanyakan *impulsive buying* berkedok *self-reward*.",
+  win: "Skena abis! Berhasil nahan *FOMO* belanja dan tetep *prioritize* kebutuhan. Lo keren, wir!",
 };
 
 const FALLBACK_CONFIG: GameConfigResponse = {
-  wants: ["Impulse Buy", "Latte", "Sale Item"],
-  needs: ["Rent", "Groceries"],
+  wants: ["Kopi", "Diskon", "Gacha"],
+  needs: ["Makan", "Kos"],
   roast: FALLBACK_ROASTS.default,
   roasts: FALLBACK_ROASTS,
 };
@@ -109,11 +111,58 @@ export async function POST(req: Request) {
       model: "gemini-3.5-flash",
       contents:
         confession ||
-        "Generate a generic funny financial confession profile for a 2D financial literacy runner game.",
+        "Buat profil finansial umum untuk game literasi keuangan 2D runner.",
       config: {
         responseMimeType: "application/json",
-        systemInstruction:
-          'You are a sarcastic but playful Indonesian financial advisor and game writer for a 2D runner game called Dash to 30. The user gives a financial confession. Return JSON only. Create obstacles and roast lines that clearly relate to the confession. Use casual Indonesian mixed with simple English only when natural. Keep the tone funny, punchy, safe, and not hateful. Do not use slurs, threats, self-harm language, or extreme insults. Wants/needs labels must be short, max 2 words, readable while running. Roast lines must be concise, max 120 characters. Make each roast category meaningfully different: tooManyWants must roast impulsive spending, missedNeeds must roast ignoring basic needs, bossHit must roast big sudden bills, lowBalance must roast running out of money, win must congratulate the player. Return exactly this JSON shape: { "wants": ["string", "string", "string"], "needs": ["string", "string"], "roast": "string", "roasts": { "default": "string", "tooManyWants": "string", "missedNeeds": "string", "bossHit": "string", "lowBalance": "string", "win": "string" } }.',
+
+        systemInstruction: `
+kamu adalah penulis dialog NPC untuk game 2D runner finansial bernama Dash to 30.
+
+GAYA UTAMA:
+- anak Gen Z Indonesia
+- santai, receh, sarkas ringan, lucu
+- kayak komentar TikTok + chat teman sendiri
+- sangat relatable kehidupan sehari-hari
+
+WAJIB BAHASA:
+- Indonesia santai (NO formal banking style)
+- boleh pakai: gas, auto, zonk, wkwk, fix, anjay (secukupnya), red flag, bocor, jebol, cuan tapi minus
+- jangan seperti artikel keuangan atau bank
+
+VIBE GAME:
+- seperti NPC game mobile
+- seperti roasting teman sendiri
+- seperti komentar TikTok yang nyelekit tapi lucu
+
+ATURAN OUTPUT:
+- JSON saja (STRICT)
+- wants & needs maksimal 2 kata
+- roast maksimal 120 karakter
+- tetap aman (NO SARA, NO self-harm, NO hate speech)
+- tetap lucu, tidak ofensif serius
+
+GANTI ISTILAH FORMAL:
+- pengeluaran → cash out / bocor saldo
+- pendapatan → cash drop / saldo masuk
+- hutang → debt trap / beban
+- kebutuhan → needs / wajib hidup
+- keinginan → wants / godaan
+
+FORMAT JSON:
+{
+  "wants": ["string", "string", "string"],
+  "needs": ["string", "string"],
+  "roast": "string",
+  "roasts": {
+    "default": "string",
+    "tooManyWants": "string",
+    "missedNeeds": "string",
+    "bossHit": "string",
+    "lowBalance": "string",
+    "win": "string"
+  }
+}
+        `,
       },
     });
 
@@ -125,25 +174,23 @@ export async function POST(req: Request) {
     const parsed = JSON.parse(text);
 
     if (parsed && Array.isArray(parsed.wants) && Array.isArray(parsed.needs)) {
-      const legacyRoast = sanitizeRoast(parsed.roast, FALLBACK_CONFIG.roast);
+      const legacyRoast = sanitizeRoast(parsed.roast, FALLBACK_ROASTS.default);
       const roasts = sanitizeRoasts(parsed.roasts, legacyRoast);
 
-      const sanitized: GameConfigResponse = {
+      return NextResponse.json({
         wants: parsed.wants
           .slice(0, 3)
-          .map((item: unknown, index: number) =>
-            sanitizeGameLabel(item, FALLBACK_CONFIG.wants[index] || "Debt"),
+          .map((v: unknown, i: number) =>
+            sanitizeGameLabel(v, FALLBACK_CONFIG.wants[i] || "Godaan"),
           ),
         needs: parsed.needs
           .slice(0, 2)
-          .map((item: unknown, index: number) =>
-            sanitizeGameLabel(item, FALLBACK_CONFIG.needs[index] || "Bill"),
+          .map((v: unknown, i: number) =>
+            sanitizeGameLabel(v, FALLBACK_CONFIG.needs[i] || "Kebutuhan"),
           ),
         roast: roasts.default,
         roasts,
-      };
-
-      return NextResponse.json(sanitized);
+      });
     }
 
     throw new Error("Invalid JSON structure returned by model");
