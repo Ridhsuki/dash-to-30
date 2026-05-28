@@ -62,9 +62,11 @@ export class MainScene extends Phaser.Scene {
   isSliding: boolean = false;
   isBossStage: boolean = false;
   isGameOver: boolean = false;
+  isFinishingWin: boolean = false;
   isPaused: boolean = false;
   pauseOverlay?: Phaser.GameObjects.Container;
   receiptOverlay?: Phaser.GameObjects.Container;
+  howToPlayOverlay?: Phaser.GameObjects.Container;
 
   lastGroundedAt: number = 0;
   lastJumpPressedAt: number = 0;
@@ -89,11 +91,13 @@ export class MainScene extends Phaser.Scene {
 
   init() {
     this.isGameOver = false;
+    this.isFinishingWin = false;
     this.isBossStage = false;
     this.isSliding = false;
     this.isPaused = false;
     this.pauseOverlay = undefined;
     this.receiptOverlay = undefined;
+    this.howToPlayOverlay = undefined;
 
     this.balance = GAMEPLAY.startingBalance;
     this.day = 1;
@@ -519,6 +523,208 @@ export class MainScene extends Phaser.Scene {
       .setScrollFactor(0);
   }
 
+  private hideHowToPlayModal() {
+    this.howToPlayOverlay?.destroy(true);
+    this.howToPlayOverlay = undefined;
+  }
+
+  private showHowToPlayModal() {
+    this.hideHowToPlayModal();
+
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const width = Math.min(680, this.scale.width - 44);
+    const height = Math.min(430, this.scale.height - 28);
+    const topY = cy - height / 2;
+
+    const backdrop = this.add
+      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.62)
+      .setDepth(DEPTH.overlay + 20)
+      .setScrollFactor(0);
+
+    const card = this.createModalCard(cx, cy, width, height, 0x9b8cff);
+    card.setDepth(DEPTH.overlay + 21);
+
+    const children: Phaser.GameObjects.GameObject[] = [backdrop, card];
+
+    const addText = (
+      x: number,
+      y: number,
+      value: string,
+      size = "12px",
+      color = "#4A3A2A",
+      originX = 0.5,
+      fontStyle = "bold",
+      wrapWidth = width - 96,
+    ) => {
+      const textObject = this.add
+        .text(x, y, value, {
+          fontFamily: "monospace",
+          fontSize: size,
+          fontStyle,
+          color,
+          align: originX === 0.5 ? "center" : "left",
+          wordWrap: { width: wrapWidth, useAdvancedWrap: true },
+        })
+        .setOrigin(originX, 0.5)
+        .setDepth(DEPTH.overlay + 25)
+        .setScrollFactor(0);
+
+      children.push(textObject);
+      return textObject;
+    };
+
+    const addIconCard = (
+      x: number,
+      y: number,
+      texture: string,
+      title: string,
+      desc: string,
+      borderColor: number,
+    ) => {
+      const box = this.add.graphics();
+      box.fillStyle(0xfffdf2, 0.96);
+      box.fillRoundedRect(x - 145, y - 34, 290, 68, 16);
+      box.lineStyle(2, borderColor, 0.95);
+      box.strokeRoundedRect(x - 145, y - 34, 290, 68, 16);
+      box.setDepth(DEPTH.overlay + 24);
+      box.setScrollFactor(0);
+
+      const icon = this.add
+        .sprite(x - 108, y, texture)
+        .setDepth(DEPTH.overlay + 26)
+        .setScrollFactor(0)
+        .setScale(0.78);
+
+      const titleText = this.add
+        .text(x - 70, y - 12, title, {
+          fontFamily: "monospace",
+          fontSize: "12px",
+          fontStyle: "bold",
+          color: "#4A3A2A",
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(DEPTH.overlay + 26)
+        .setScrollFactor(0);
+
+      const descText = this.add
+        .text(x - 70, y + 10, desc, {
+          fontFamily: "monospace",
+          fontSize: "10px",
+          fontStyle: "bold",
+          color: "#8B5E3C",
+          wordWrap: { width: 190, useAdvancedWrap: true },
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(DEPTH.overlay + 26)
+        .setScrollFactor(0);
+
+      children.push(box, icon, titleText, descText);
+    };
+
+    addText(cx - width / 2 + 48, topY + 48, "🎮", "23px", "#4A3A2A");
+    addText(cx, topY + 41, "CARA MAIN", "27px", "#4A3A2A");
+    addText(
+      cx,
+      topY + 65,
+      "Bertahan sampai Day 30. Ambil kebutuhan, hindari godaan.",
+      "12px",
+      "#8B5E3C",
+      0.5,
+      "bold",
+      width - 140,
+    );
+
+    const leftX = cx - 156;
+    const rightX = cx + 156;
+
+    addIconCard(
+      leftX,
+      topY + 132,
+      "tex_payday",
+      "Saldo Masuk",
+      "Ambil dulu di awal game.",
+      0xffc857,
+    );
+
+    addIconCard(
+      rightX,
+      topY + 132,
+      "tex_need",
+      "Needs",
+      "Ambil. Kalau dilewatkan, Life turun.",
+      0x6fd08c,
+    );
+
+    addIconCard(
+      leftX,
+      topY + 214,
+      "tex_want",
+      "Wants",
+      "Hindari. Kalau kena, saldo turun.",
+      0xff7aa2,
+    );
+
+    addIconCard(
+      rightX,
+      topY + 214,
+      "tex_boss",
+      "Boss",
+      "Tagihan besar. Lompat atau tunduk.",
+      0xff6b6b,
+    );
+
+    const ruleY = topY + 292;
+
+    addText(
+      cx,
+      ruleY,
+      "Kontrol: Space / ↑ untuk lompat   •   ↓ untuk menunduk   •   P / ESC untuk pause",
+      "11px",
+      "#4A3A2A",
+      0.5,
+      "bold",
+      width - 88,
+    );
+
+    addText(
+      cx,
+      ruleY + 34,
+      "Skor berasal dari hari bertahan, Needs yang diambil, Wants/Boss yang dihindari, dan sisa saldo.",
+      "11px",
+      "#8B5E3C",
+      0.5,
+      "bold",
+      width - 110,
+    );
+
+    const closeBtn = this.createMenuButton(
+      cx,
+      topY + height - 30,
+      "MENGERTI",
+      "#4A3A2A",
+      "#6FD08C",
+      () => this.hideHowToPlayModal(),
+    );
+
+    children.push(closeBtn);
+
+    this.howToPlayOverlay = this.add
+      .container(0, 0, children)
+      .setDepth(DEPTH.overlay + 20)
+      .setAlpha(0)
+      .setScale(0.96);
+
+    this.tweens.add({
+      targets: this.howToPlayOverlay,
+      alpha: 1,
+      scaleX: 1,
+      scaleY: 1,
+      duration: 220,
+      ease: "Back.easeOut",
+    });
+  }
+
   private showPauseMenu() {
     if (this.isPaused || this.isGameOver) return;
 
@@ -538,10 +744,9 @@ export class MainScene extends Phaser.Scene {
       .setDepth(DEPTH.overlay)
       .setScrollFactor(0);
 
-    const card = this.createModalCard(cx, cy, 470, 318, 0xffc857);
+    const card = this.createModalCard(cx, cy, 500, 354, 0xffc857);
 
-
-    const title = this.createModalText(cx, cy - 111, "PAUSED", {
+    const title = this.createModalText(cx, cy - 125, "PAUSED", {
       fontSize: "38px",
       fontStyle: "bold",
       color: "#4A3A2A",
@@ -549,7 +754,7 @@ export class MainScene extends Phaser.Scene {
 
     const subtitle = this.createModalText(
       cx,
-      cy - 52,
+      cy - 70,
       "Dompet tarik napas dulu.",
       {
         fontSize: "14px",
@@ -560,16 +765,25 @@ export class MainScene extends Phaser.Scene {
 
     const resume = this.createMenuButton(
       cx,
-      cy + 8,
+      cy - 18,
       "RESUME RUN",
       "#4A3A2A",
       "#6FD08C",
       () => this.hidePauseMenu(),
     );
 
+    const howToPlay = this.createMenuButton(
+      cx,
+      cy + 36,
+      "CARA MAIN",
+      "#4A3A2A",
+      "#9B8CFF",
+      () => this.showHowToPlayModal(),
+    );
+
     const restart = this.createMenuButton(
       cx - 96,
-      cy + 76,
+      cy + 92,
       "RESTART",
       "#4A3A2A",
       "#FFC857",
@@ -581,7 +795,7 @@ export class MainScene extends Phaser.Scene {
 
     const quit = this.createMenuButton(
       cx + 96,
-      cy + 76,
+      cy + 92,
       "HOME",
       "#FFF6E8",
       "#FF6B6B",
@@ -602,6 +816,7 @@ export class MainScene extends Phaser.Scene {
         title,
         subtitle,
         resume,
+        howToPlay,
         restart,
         quit,
       ])
@@ -856,6 +1071,10 @@ export class MainScene extends Phaser.Scene {
 
     this.createHudButton(width - 24, 37, "⏸", () => this.showPauseMenu());
 
+    this.createHudButton(width - 24, height - 66, "?", () =>
+      this.showHowToPlayModal(),
+    );
+
     this.incomingNotice = new IncomingNotice(this, width);
     this.eventFeed = new EventFeed(this, width, height);
 
@@ -972,7 +1191,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     if (this.day >= GAMEPLAY.maxDay) {
-      this.triggerGameOver(true);
+      this.startWinCelebration();
     }
   }
 
@@ -1196,17 +1415,74 @@ export class MainScene extends Phaser.Scene {
     entity.destroy();
   }
 
+  private clearActiveEntities() {
+    const groups = [this.obstacleGroup, this.itemGroup, this.paydayGroup];
+
+    groups.forEach((group) => {
+      if (!group) return;
+
+      group.getChildren().forEach((child) => {
+        this.destroyEntity(child as GameEntitySprite);
+      });
+    });
+  }
+
+  private startWinCelebration() {
+    if (this.isGameOver || this.isFinishingWin) return;
+
+    this.isFinishingWin = true;
+    this.controlsLocked = true;
+    this.isSliding = false;
+
+    if (this.spawnTimer) {
+      this.spawnTimer.remove(false);
+    }
+
+    if (this.dayTimer) {
+      this.dayTimer.remove(false);
+    }
+
+    this.clearActiveEntities();
+
+    const floorY = this.scale.height - 32;
+    const targetX = Math.min(this.scale.width / 2, this.scale.width - 170);
+
+    this.player.setVelocity(0, 0);
+    this.player.setGravityY(0);
+    this.player.setY(floorY - 28);
+    this.setPlayerRunState();
+    this.player.anims.play("player-run", true);
+    this.emitter.start();
+
+    this.eventFeed.push("Finish line!", "good");
+    this.incomingNotice.show("Tanggal 30!", "payday", "FINISH");
+
+    this.tweens.add({
+      targets: this.player,
+      x: targetX,
+      duration: 1450,
+      ease: "Sine.easeInOut",
+    });
+
+    this.time.delayedCall(1850, () => {
+      this.player.setGravityY(1500);
+      this.triggerGameOver(true);
+    });
+  }
+
   private buildReceiptText(
     isWin: boolean,
     finalScore: number,
     personalBest: number,
   ) {
     const playerIdentity = this.getPlayerIdentity();
-    const status = isWin ? "MONTH SURVIVED" : "BANKRUPT";
+    const status = isWin ? "BERHASIL BERTAHAN" : "BONCOS / BANKRUPT";
     const advice = isWin ? this.getWinMessage() : this.getRoastMessage();
 
     return [
-      "====== DASH TO 30 RECEIPT ======",
+      "====== STRUK DASH TO 30 ======",
+      "Minimarket Keputusan Finansial",
+      "------------------------------",
       `PLAYER      : ${playerIdentity.name}`,
       `STATUS      : ${status}`,
       `DAY         : ${this.day}/${GAMEPLAY.maxDay}`,
@@ -1231,10 +1507,10 @@ export class MainScene extends Phaser.Scene {
     isWin: boolean,
     finalScore: number,
     personalBest: number,
-  ) {
+  ): Promise<"shared" | "copied" | "failed" | "unavailable"> {
     const receiptText = this.buildReceiptText(isWin, finalScore, personalBest);
 
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return "unavailable";
 
     try {
       const nav = window.navigator as Navigator & {
@@ -1243,21 +1519,37 @@ export class MainScene extends Phaser.Scene {
 
       if (nav.share) {
         await nav.share({
-          title: "Dash to 30 Receipt",
+          title: "Struk Dash to 30",
           text: receiptText,
         });
 
         this.eventFeed?.push("Receipt shared", "good");
-        return;
+        return "shared";
       }
 
       if (window.navigator.clipboard?.writeText) {
         await window.navigator.clipboard.writeText(receiptText);
         this.eventFeed?.push("Receipt copied", "good");
+        return "copied";
       }
+
+      this.eventFeed?.push("Clipboard unavailable", "warning");
+      return "unavailable";
     } catch (error) {
       console.error("Failed to share receipt", error);
+
+      try {
+        if (window.navigator.clipboard?.writeText) {
+          await window.navigator.clipboard.writeText(receiptText);
+          this.eventFeed?.push("Receipt copied", "good");
+          return "copied";
+        }
+      } catch (clipboardError) {
+        console.error("Failed to copy receipt", clipboardError);
+      }
+
       this.eventFeed?.push("Share failed", "bad");
+      return "failed";
     }
   }
 
@@ -1275,13 +1567,13 @@ export class MainScene extends Phaser.Scene {
 
     const cx = this.scale.width / 2;
     const cy = this.scale.height / 2;
-    const receiptWidth = Math.min(430, this.scale.width - 64);
-    const receiptHeight = Math.min(392, this.scale.height - 36);
+    const receiptWidth = Math.min(440, this.scale.width - 56);
+    const receiptHeight = Math.min(424, this.scale.height - 30);
     const x0 = cx - receiptWidth / 2;
     const y0 = cy - receiptHeight / 2;
 
     const backdrop = this.add
-      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.52)
+      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x4a3a2a, 0.54)
       .setDepth(DEPTH.overlay + 10)
       .setScrollFactor(0);
 
@@ -1291,14 +1583,14 @@ export class MainScene extends Phaser.Scene {
     paper.lineStyle(3, 0x8b5e3c, 1);
     paper.strokeRoundedRect(x0, y0, receiptWidth, receiptHeight, 18);
 
-    paper.lineStyle(1, 0x8b5e3c, 0.35);
+    paper.lineStyle(1, 0x8b5e3c, 0.32);
     for (let x = x0 + 18; x < x0 + receiptWidth - 18; x += 18) {
-      paper.lineBetween(x, y0 + 46, x + 9, y0 + 46);
+      paper.lineBetween(x, y0 + 50, x + 9, y0 + 50);
       paper.lineBetween(
         x,
-        y0 + receiptHeight - 58,
+        y0 + receiptHeight - 84,
         x + 9,
-        y0 + receiptHeight - 58,
+        y0 + receiptHeight - 84,
       );
     }
 
@@ -1311,15 +1603,17 @@ export class MainScene extends Phaser.Scene {
       size = "12px",
       color = "#4A3A2A",
       originX = 0.5,
+      fontStyle = "bold",
+      wrapWidth = receiptWidth - 54,
     ) => {
       const textObject = this.add
         .text(x, y, value, {
           fontFamily: "monospace",
           fontSize: size,
-          fontStyle: "bold",
+          fontStyle,
           color,
           align: originX === 0.5 ? "center" : "left",
-          wordWrap: { width: receiptWidth - 54, useAdvancedWrap: true },
+          wordWrap: { width: wrapWidth, useAdvancedWrap: true },
         })
         .setOrigin(originX, 0.5)
         .setDepth(DEPTH.overlay + 12)
@@ -1356,63 +1650,102 @@ export class MainScene extends Phaser.Scene {
     };
 
     const playerIdentity = this.getPlayerIdentity();
-    const status = isWin ? "SURVIVED" : "BANKRUPT";
+    const status = isWin ? "BERHASIL" : "BONCOS";
     const advice = isWin ? this.getWinMessage() : this.getRoastMessage();
 
-    addText(cx, y0 + 25, "DASH TO 30 RECEIPT", "16px", "#4A3A2A");
-    addText(
-      cx,
-      y0 + 56,
-      "MINIMARKET OF QUESTIONABLE CHOICES",
-      "9px",
-      "#8B5E3C",
-    );
+    addText(cx, y0 + 25, "STRUK DASH TO 30", "16px", "#4A3A2A");
+    addText(cx, y0 + 57, "MINIMARKET KEPUTUSAN FINANSIAL", "9px", "#8B5E3C");
 
     let rowY = y0 + 76;
-    addRow("PLAYER", playerIdentity.name, rowY);
+    addRow("PEMAIN", playerIdentity.name, rowY);
     rowY += 20;
     addRow("STATUS", status, rowY);
     rowY += 20;
-    addRow("DAY", `${this.day}/${GAMEPLAY.maxDay}`, rowY);
+    addRow("HARI", `${this.day}/${GAMEPLAY.maxDay}`, rowY);
     rowY += 20;
-    addRow("RUN SCORE", String(finalScore), rowY);
+    addRow("SKOR RUN", String(finalScore), rowY);
     rowY += 20;
-    addRow("PERSONAL BEST", String(personalBest), rowY);
+    addRow("BEST PRIBADI", String(personalBest), rowY);
     rowY += 20;
     addRow("SALDO", this.formatCurrency(this.balance), rowY);
     rowY += 26;
-    addRow("NEEDS TAKEN", String(this.needsTaken), rowY);
+    addRow("NEEDS AMBIL", String(this.needsTaken), rowY);
     rowY += 20;
-    addRow("MISSED NEED", String(this.missedNeeds), rowY);
+    addRow("NEEDS LEWAT", String(this.missedNeeds), rowY);
     rowY += 20;
-    addRow("WANTS DODGED", String(this.wantsAvoided), rowY);
+    addRow("WANTS LOLOS", String(this.wantsAvoided), rowY);
     rowY += 20;
-    addRow("WANTS HIT", String(this.wantsHit), rowY);
+    addRow("WANTS KENA", String(this.wantsHit), rowY);
     rowY += 20;
-    addRow("BOSS DODGED", String(this.bossAvoided), rowY);
+    addRow("BOSS LOLOS", String(this.bossAvoided), rowY);
 
     addText(
       cx,
-      y0 + receiptHeight - 84,
-      isWin ? `CATATAN: ${advice}` : `AI ROAST: ${advice}`,
+      y0 + receiptHeight - 99,
+      isWin ? `SARAN: ${advice}` : `AI ROAST: ${advice}`,
       "11px",
       "#4A3A2A",
+      0.5,
+      "bold",
+      receiptWidth - 64,
+    );
+
+    const receiptStatusText = addText(
+      cx,
+      y0 + receiptHeight - 74,
+      "Siap dibagikan sebagai teks receipt.",
+      "10px",
+      "#8B5E3C",
     );
 
     const shareBtn = this.createMenuButton(
       cx - 88,
-      y0 + receiptHeight - 28,
-      "COPY",
+      y0 + receiptHeight - 30,
+      "SHARE",
       "#4A3A2A",
       "#6FD08C",
       () => {
-        void this.shareReceiptText(isWin, finalScore, personalBest);
+        receiptStatusText.setText("Memproses receipt...");
+        shareBtn.disableInteractive();
+        shareBtn.setAlpha(0.72);
+
+        void this.shareReceiptText(isWin, finalScore, personalBest).then(
+          (status) => {
+            shareBtn.setInteractive({ useHandCursor: true });
+            shareBtn.setAlpha(1);
+
+            if (status === "shared") {
+              receiptStatusText.setText("Receipt berhasil dibagikan.");
+              shareBtn.setText("SHARED");
+              return;
+            }
+
+            if (status === "copied") {
+              receiptStatusText.setText(
+                "Receipt berhasil disalin ke clipboard.",
+              );
+              shareBtn.setText("COPIED");
+              return;
+            }
+
+            if (status === "unavailable") {
+              receiptStatusText.setText(
+                "Browser belum mendukung share/copy otomatis.",
+              );
+              shareBtn.setText("SHARE");
+              return;
+            }
+
+            receiptStatusText.setText("Gagal membagikan receipt. Coba lagi.");
+            shareBtn.setText("RETRY");
+          },
+        );
       },
     );
 
     const closeBtn = this.createMenuButton(
       cx + 88,
-      y0 + receiptHeight - 28,
+      y0 + receiptHeight - 30,
       "CLOSE",
       "#FFF6E8",
       "#8B5E3C",
@@ -1632,6 +1965,12 @@ export class MainScene extends Phaser.Scene {
 
   update() {
     if (this.isGameOver) return;
+
+    if (this.isFinishingWin) {
+      this.background.update(this.day, this.isBossStage);
+      this.player.anims.play("player-run", true);
+      return;
+    }
 
     const pausePressed =
       Boolean(this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) ||
