@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import toast from "react-hot-toast";
 import { createPortal } from "react-dom";
 import {
   Play,
@@ -33,9 +34,13 @@ import {
   type LeaderboardSubmitState,
 } from "@/lib/leaderboard";
 
+const LOGIN_FOCUS_UNLOCK_DELAY_MS = 900;
+const LOGIN_HARD_UNLOCK_MS = 60000;
+
 export default function MenuActions() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoginInProgress, setIsLoginInProgress] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authErrorDetails, setAuthErrorDetails] = useState<{
     code?: string;
@@ -58,6 +63,8 @@ export default function MenuActions() {
     message: "",
   });
   const lastSubmittedKeyRef = useRef<string | null>(null);
+  const loginInProgressRef = useRef(false);
+  const loginUnlockTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!gameStarted) return;
@@ -103,6 +110,34 @@ export default function MenuActions() {
       EventBus.off("game-over", handleGameOver);
     };
   }, [gameStarted, user]);
+
+  useEffect(() => {
+    const handleAuthPopupFocusReturn = () => {
+      if (!loginInProgressRef.current) return;
+      if (document.visibilityState !== "visible") return;
+
+      window.setTimeout(() => {
+        if (!loginInProgressRef.current) return;
+
+        releaseLoginLock();
+      }, LOGIN_FOCUS_UNLOCK_DELAY_MS);
+    };
+
+    window.addEventListener("focus", handleAuthPopupFocusReturn);
+    document.addEventListener("visibilitychange", handleAuthPopupFocusReturn);
+
+    return () => {
+      window.removeEventListener("focus", handleAuthPopupFocusReturn);
+      document.removeEventListener(
+        "visibilitychange",
+        handleAuthPopupFocusReturn,
+      );
+
+      if (loginUnlockTimerRef.current) {
+        window.clearTimeout(loginUnlockTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!auth) {
@@ -165,25 +200,82 @@ export default function MenuActions() {
     }
   };
 
+  const releaseLoginLock = () => {
+    loginInProgressRef.current = false;
+    setIsLoginInProgress(false);
+
+    if (loginUnlockTimerRef.current && typeof window !== "undefined") {
+      window.clearTimeout(loginUnlockTimerRef.current);
+      loginUnlockTimerRef.current = null;
+    }
+  };
+
+  const startLoginLock = () => {
+    loginInProgressRef.current = true;
+    setIsLoginInProgress(true);
+
+    if (typeof window === "undefined") return;
+
+    if (loginUnlockTimerRef.current) {
+      window.clearTimeout(loginUnlockTimerRef.current);
+    }
+
+    // Hard safety unlock: fallback terakhir jika popup/promise tidak settle.
+    // Focus unlock tetap menjadi jalur utama ketika user cancel popup.
+    loginUnlockTimerRef.current = window.setTimeout(() => {
+      releaseLoginLock();
+    }, LOGIN_HARD_UNLOCK_MS);
+  };
+
   const handleGoogleLogin = async () => {
+    if (loginInProgressRef.current) return;
+
     if (!auth) {
       setAuthError("other");
       setAuthErrorDetails({
         code: "FIREBASE_NOT_CONFIGURED",
         message: "Firebase env belum lengkap. Cek file .env.local.",
       });
+
+      toast.error("Firebase belum siap. Cek env dulu ya.", {
+        id: "firebase-not-configured",
+        icon: "⚠️",
+      });
+
       return;
     }
+
+    startLoginLock();
 
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
 
     try {
       setAuthError(null);
-      await signInWithPopup(auth, provider);
+
+      const result = await signInWithPopup(auth, provider);
+      const displayName =
+        result.user.displayName?.split(" ")[0] ||
+        result.user.email?.split("@")[0] ||
+        "Player";
+
+      toast.success(`Welcome back, ${displayName}!`, {
+        id: "login-success",
+        icon: "👋",
+      });
     } catch (error: any) {
-      const errCode = error?.code || "";
-      if (errCode === "auth/popup-closed-by-user") return;
+      const errCode = String(error?.code || "");
+
+      if (
+        errCode === "auth/popup-closed-by-user" ||
+        errCode === "auth/cancelled-popup-request"
+      ) {
+        toast("Login dibatalkan.", {
+          id: "login-cancelled",
+          icon: "👌",
+        });
+        return;
+      }
 
       console.error("Google Sign In Error:", error);
       const errMsg = error?.message || "";
@@ -201,18 +293,40 @@ export default function MenuActions() {
               ? window.location.hostname
               : "your-app-domain.run.app",
         });
-      } else if (errCode !== "auth/popup-closed-by-user") {
+
+        toast.error("Domain Firebase belum diizinkan.", {
+          id: "login-unauthorized-domain",
+          icon: "🚫",
+        });
+      } else {
         setAuthError("other");
         setAuthErrorDetails({
           code: errCode || "UNKNOWN",
           message: errMsg || String(error),
         });
+
+        toast.error("Login gagal. Coba lagi ya.", {
+          id: "login-failed",
+          icon: "😵",
+        });
       }
+    } finally {
+      releaseLoginLock();
     }
   };
 
   const handleLogout = async () => {
-    if (!auth) return;
+    if (!auth) {
+      toast.error("Firebase belum siap untuk logout.", {
+        id: "logout-auth-missing",
+      });
+      return;
+    }
+
+    const displayName =
+      user?.displayName?.split(" ")[0] ||
+      user?.email?.split("@")[0] ||
+      "Player";
 
     try {
       await signOut(auth);
@@ -220,8 +334,16 @@ export default function MenuActions() {
       if (typeof window !== "undefined") {
         localStorage.removeItem("dashTo30_user");
       }
+
+      toast.success(`Logout berhasil. Sampai jumpa, ${displayName}!`, {
+        id: "logout-success",
+      });
     } catch (error) {
       console.error("Sign Out Error:", error);
+
+      toast.error("Logout gagal. Coba lagi ya.", {
+        id: "logout-failed",
+      });
     }
   };
 
@@ -408,11 +530,14 @@ export default function MenuActions() {
           ) : (
             <button
               onClick={handleGoogleLogin}
+              aria-disabled={isLoginInProgress}
               type="button"
-              className="group w-full bg-[#FFF1C7] hover:bg-white text-[10px] sm:text-xs text-[#4A3A2A] font-bold py-3.5 rounded-xl border-2 border-[#8B5E3C] shadow-[0_3px_0_#8B5E3C] active:translate-y-[2px] active:shadow-[0_1px_0_#8B5E3C] transition-all uppercase font-mono tracking-wider flex items-center justify-center gap-2.5 cursor-pointer"
+              className="group w-full bg-[#FFF1C7] hover:bg-white text-[10px] sm:text-xs text-[#4A3A2A] font-bold py-3.5 rounded-xl border-2 border-[#8B5E3C] shadow-[0_3px_0_#8B5E3C] active:translate-y-[2px] active:shadow-[0_1px_0_#8B5E3C] transition-all uppercase font-mono tracking-wider flex items-center justify-center gap-2.5 cursor-pointer aria-disabled:opacity-60 aria-disabled:cursor-wait"
             >
               <LogIn className="w-3.5 h-3.5 text-[#FF7AA2]" />
-              <span>LOGIN TO SAVE SCORE</span>
+              <span>
+                {isLoginInProgress ? "OPENING LOGIN..." : "LOGIN TO SAVE SCORE"}
+              </span>
             </button>
           )}
         </>
