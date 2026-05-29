@@ -78,7 +78,7 @@ export default function LeaderboardModal({
     const leaderboardQuery = query(
       highscoresRef,
       orderBy("score", "desc"),
-      limit(10),
+      limit(5),
     );
 
     const unsubscribe = onSnapshot(
@@ -204,7 +204,7 @@ export default function LeaderboardModal({
               </p>
             </div>
           ) : (
-            scores.map((entry, index) => {
+            scores.slice(0, 5).map((entry, index) => {
               const rank = index + 1;
               const isTopThree = rank <= 3;
               let rankBg = "bg-white";

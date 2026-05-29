@@ -26,6 +26,7 @@ import LogoutConfirmModal from "./LogoutConfirmModal";
 import LeaderboardSubmitToast from "./LeaderboardSubmitToast";
 import RoleSetupModal from "./RoleSetupModal";
 import GameWrapper from "@/components/GameWrapper";
+import MobileWelcomeModal from "./MobileWelcomeModal";
 import { EventBus } from "@/game/EventBus";
 import {
   createSubmitKey,
@@ -357,6 +358,14 @@ export default function MenuActions() {
 
   return (
     <div className="space-y-3 sm:space-y-3.5">
+      <MobileWelcomeModal
+        disabled={
+          gameStarted ||
+          isRoleModalOpen ||
+          isLeaderboardOpen ||
+          Boolean(authError)
+        }
+      />
       <LeaderboardSubmitToast
         state={submitStatus}
         onDismiss={() =>
