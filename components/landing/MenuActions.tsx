@@ -26,6 +26,7 @@ import LogoutConfirmModal from "./LogoutConfirmModal";
 import LeaderboardSubmitToast from "./LeaderboardSubmitToast";
 import RoleSetupModal from "./RoleSetupModal";
 import GameWrapper from "@/components/GameWrapper";
+import SoundBridge from "@/components/system/SoundBridge";
 import MobileWelcomeModal from "./MobileWelcomeModal";
 import { EventBus } from "@/game/EventBus";
 import {
@@ -358,6 +359,7 @@ export default function MenuActions() {
 
   return (
     <div className="space-y-3 sm:space-y-3.5">
+      <SoundBridge mode={gameStarted ? "game" : "home"} />
       <MobileWelcomeModal
         disabled={
           gameStarted ||

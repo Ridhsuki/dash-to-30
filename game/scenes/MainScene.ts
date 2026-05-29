@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { EventBus } from "../EventBus";
+import { playGameSound, resumeMusic, suspendMusic } from "../../lib/audio/externalSoundManager";
 import { FinancialParallaxBackground } from "../background/FinancialParallaxBackground";
 import { GAMEPLAY, LANES } from "../config/gameplay";
 import { DEPTH } from "../constants/layers";
@@ -184,6 +185,7 @@ export class MainScene extends Phaser.Scene {
     this.isSliding = true;
     this.slideStartedAt = this.time.now;
     this.player.anims.stop();
+    playGameSound("slide");
     this.player.setTexture("player_slide");
 
     this.player.body?.setSize(36, 16);
@@ -410,7 +412,10 @@ export class MainScene extends Phaser.Scene {
 
     button.on("pointerover", () => button.setScale(1.08));
     button.on("pointerout", () => button.setScale(1));
-    button.on("pointerdown", onClick);
+    button.on("pointerdown", () => {
+      playGameSound("uiClick");
+      onClick();
+    });
 
     return button;
   }
@@ -446,7 +451,10 @@ export class MainScene extends Phaser.Scene {
       button.setAlpha(1);
     });
 
-    button.on("pointerdown", onClick);
+    button.on("pointerdown", () => {
+      playGameSound("uiClick");
+      onClick();
+    });
 
     return button;
   }
@@ -735,6 +743,7 @@ export class MainScene extends Phaser.Scene {
   private showPauseMenu() {
     if (this.isPaused || this.isGameOver) return;
 
+    playGameSound("pause");
     this.isPaused = true;
     this.physics.pause();
 
@@ -795,6 +804,7 @@ export class MainScene extends Phaser.Scene {
       "#4A3A2A",
       "#FFC857",
       () => {
+        resumeMusic("game");
         this.scene.stop("MainScene");
         this.scene.start("MainScene");
       },
@@ -1507,6 +1517,7 @@ export class MainScene extends Phaser.Scene {
     const want = wantObject as GameEntitySprite;
     const isBoss = Boolean(want.isBoss);
     const label = want.fullLabel || (isBoss ? "Boss" : "Want");
+    playGameSound("hitWant");
 
     this.destroyEntity(want);
 
@@ -1525,6 +1536,7 @@ export class MainScene extends Phaser.Scene {
   hitNeed(_playerObject: unknown, needObject: unknown) {
     const need = needObject as GameEntitySprite;
     const label = need.fullLabel || "Need";
+    playGameSound("need");
 
     need.isNeed = false;
     this.destroyEntity(need);
@@ -1546,6 +1558,7 @@ export class MainScene extends Phaser.Scene {
 
   hitPayday(_playerObject: unknown, paydayObject: unknown) {
     const payday = paydayObject as GameEntitySprite;
+    playGameSound("moneyIn");
 
     this.destroyEntity(payday);
 
@@ -1953,6 +1966,8 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.emitter.stop();
+    suspendMusic();
+    playGameSound(isWin ? "win" : "lose", { force: true });
     this.destroyMobileControls();
 
     const finalScore = this.getFinalScore();
@@ -2071,6 +2086,7 @@ export class MainScene extends Phaser.Scene {
       "#4A3A2A",
       "#FFC857",
       () => {
+        resumeMusic("game");
         this.scene.stop("MainScene");
         this.scene.start("MainScene");
       },
@@ -2204,6 +2220,7 @@ export class MainScene extends Phaser.Scene {
           this.player.y -= 4;
         }
       } else if (canUseBufferedJump) {
+        playGameSound("jump");
         this.player.setVelocityY(-720);
         this.setPlayerJumpState();
         this.lastJumpPressedAt = 0;
