@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
@@ -14,6 +14,14 @@ const pressStart2P = Press_Start_2P({
   variable: "--font-pixel",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Dash to 30 | 2D Financial Literacy Arcade Game",

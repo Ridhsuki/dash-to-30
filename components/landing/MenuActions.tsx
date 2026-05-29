@@ -28,6 +28,11 @@ import RoleSetupModal from "./RoleSetupModal";
 import GameWrapper from "@/components/GameWrapper";
 import { EventBus } from "@/game/EventBus";
 import {
+  enterMobileGameViewport,
+  exitMobileGameViewport,
+  isMobileGameViewport,
+} from "@/lib/mobileGameViewport";
+import {
   createSubmitKey,
   submitLeaderboardScore,
   type GameOverPayload,
@@ -172,7 +177,27 @@ export default function MenuActions() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!gameStarted) return;
+    if (!isMobileGameViewport()) return;
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      void enterMobileGameViewport(
+        document.getElementById("dash-to-30-game-root"),
+      );
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      void exitMobileGameViewport();
+    };
+  }, [gameStarted]);
+
   const handleRoleSubmit = async (confession: string) => {
+    if (isMobileGameViewport()) {
+      void enterMobileGameViewport();
+    }
+
     setIsGenerating(true);
 
     try {
@@ -193,6 +218,14 @@ export default function MenuActions() {
       setAiConfig(config);
       setGameStarted(true);
       setIsRoleModalOpen(false);
+
+      if (typeof window !== "undefined" && isMobileGameViewport()) {
+        window.requestAnimationFrame(() => {
+          void enterMobileGameViewport(
+            document.getElementById("dash-to-30-game-root"),
+          );
+        });
+      }
     } catch (error) {
       console.error("Error during financial sin generation:", error);
     } finally {
@@ -445,7 +478,10 @@ export default function MenuActions() {
 
       {gameStarted ? (
         createPortal(
-          <div className="fixed inset-0 z-[100] bg-[#1a1a1a] overflow-hidden">
+          <div
+            id="dash-to-30-game-root"
+            className="dt30-game-shell fixed inset-0 z-[100] bg-[#1a1a1a] overflow-hidden"
+          >
             <GameWrapper aiConfig={aiConfig} />
           </div>,
           document.body,
