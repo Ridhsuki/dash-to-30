@@ -44,14 +44,14 @@ export default function AudioSettingsControls() {
   };
 
   const handleToggleMusic = () => {
-    void unlockExternalAudio().then(() => {
-      const musicEnabled = toggleMusicEnabled();
+    void unlockExternalAudio();
 
-      setSettings((current) => ({
-        ...current,
-        musicEnabled,
-      }));
-    });
+    const musicEnabled = toggleMusicEnabled();
+
+    setSettings((current) => ({
+      ...current,
+      musicEnabled,
+    }));
   };
 
   return (

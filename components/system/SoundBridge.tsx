@@ -105,9 +105,8 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
 
-      void unlockExternalAudio().then(() => {
-        startCurrentModeMusic(mode);
-      });
+      void unlockExternalAudio();
+      startCurrentModeMusic(mode);
 
       if (!(target instanceof HTMLElement)) return;
 
