@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const isStandalone = process.env.NEXT_OUTPUT_STANDALONE === "true";
+const isStrictBuild = process.env.NEXT_STRICT_BUILD === "true";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -10,7 +11,7 @@ const nextConfig: NextConfig = {
   },
 
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: !isStrictBuild,
   },
 
   images: {

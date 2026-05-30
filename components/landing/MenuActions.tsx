@@ -184,9 +184,19 @@ export default function MenuActions() {
         body: JSON.stringify({ confession }),
       });
 
-      if (!res.ok) throw new Error("API Request Failed");
+      const contentType = res.headers.get("content-type") || "";
+      const rawResponse = await res.text();
 
-      const config = await res.json();
+      if (!res.ok || !contentType.includes("application/json")) {
+        throw new Error(
+          `Gemini API returned non-JSON response. Status: ${res.status}. Preview: ${rawResponse.slice(
+            0,
+            120,
+          )}`,
+        );
+      }
+
+      const config = JSON.parse(rawResponse);
 
       if (typeof window !== "undefined") {
         localStorage.setItem("dashTo30_aiConfig", JSON.stringify(config));

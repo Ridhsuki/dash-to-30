@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -H 0.0.0.0",
+    "dev": "next dev -H 0.0.0.0 -p ${PORT:-3000}",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint": "eslint .",
     "clean": "rm -rf .next",
-    "check:audio": "node scripts/check-audio-assets.mjs"
+    "check:audio": "node scripts/check-audio-assets.mjs",
+    "predev": "rm -rf .next",
+    "prebuild": "rm -rf .next"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

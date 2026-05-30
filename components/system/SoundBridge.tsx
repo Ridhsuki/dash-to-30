@@ -119,7 +119,6 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
       if (control.getAttribute("aria-disabled") === "true") return;
       if ("disabled" in control && Boolean(control.disabled)) return;
 
-      // Tombol settings audio tetap membuka izin audio, tetapi tidak memicu click SFX ganda.
       if (control.dataset.soundMuted === "true") {
         return;
       }
