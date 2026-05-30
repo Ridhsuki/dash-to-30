@@ -105,12 +105,6 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
 
-      /*
-       * Important:
-       * Unlock audio and try to start music on EVERY user gesture.
-       * Do this before checking data-sound-muted, because muted controls
-       * should skip click SFX, not block browser audio unlocking.
-       */
       void unlockExternalAudio().then(() => {
         startCurrentModeMusic(mode);
       });
@@ -125,6 +119,7 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
       if (control.getAttribute("aria-disabled") === "true") return;
       if ("disabled" in control && Boolean(control.disabled)) return;
 
+      // Tombol settings audio tetap membuka izin audio, tetapi tidak memicu click SFX ganda.
       if (control.dataset.soundMuted === "true") {
         return;
       }
