@@ -27,10 +27,6 @@ export const AUDIO_ASSETS: Record<GameSoundKey, AudioAssetSource> = {
   jump: "/audio/dt30-jump.wav",
   slide: "/audio/dt30-slide.wav",
   pause: "/audio/shocked-sound-effect.mp3",
-
-  // Masukkan hanya file yang benar-benar ada di public/audio.
-  // Contoh:
-  // win: ["/audio/win1.mp3", "/audio/win2.mp3", "/audio/win3.mp3"]
   win: [
     // "/audio/dt30-win.wav",
     "/audio/win1.mp3",
@@ -39,9 +35,6 @@ export const AUDIO_ASSETS: Record<GameSoundKey, AudioAssetSource> = {
     "/audio/win4.mp3",
     // "/audio/win5.mp3",
   ],
-
-  // Contoh:
-  // lose: ["/audio/lose1.mp3", "/audio/lose2.mp3", "/audio/lose3.mp3"]
   lose: [
     // "/audio/dt30-lose.wav",
     "/audio/lose1.mp3",

@@ -290,9 +290,11 @@ export function playGameSound(
     audio.currentTime = 0;
     audio.volume = AUDIO_VOLUME[key] ?? 0.5;
 
-    void audio.play();
+    void audio.play().catch((error) => {
+      console.info("[DashTo30] Sound skipped:", key, src, error);
+    });
   } catch (error) {
-    console.info("[DashTo30] Sound skipped:", key, error);
+    console.info("[DashTo30] Sound skipped:", key, src, error);
   }
 }
 
