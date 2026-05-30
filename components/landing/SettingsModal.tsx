@@ -83,7 +83,7 @@ export default function SettingsModal({ isOpen, onClose }: Props) {
 
         <div className="flex gap-2 rounded-2xl border-2 border-[#8B5E3C]/35 bg-white px-3 py-2 text-[9px] font-mono font-bold leading-relaxed text-[#8B5E3C] normal-case">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#9B8CFF]" />
-          Sound Effects dan Backsound Music disimpan terpisah di browser.
+          The sounds and background music are sourced from myinstants.com.
         </div>
 
         <button
