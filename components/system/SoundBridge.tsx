@@ -53,23 +53,27 @@ function inferSoundFromControl(element: HTMLElement): GameSoundKey {
   return "uiClick";
 }
 
+function startCurrentModeMusic(mode: SoundBridgeProps["mode"]) {
+  if (mode === "home") {
+    startMusic("home");
+    return;
+  }
+
+  if (mode === "game") {
+    startMusic("game");
+    return;
+  }
+
+  stopMusic();
+}
+
 export default function SoundBridge({ mode }: SoundBridgeProps) {
   useEffect(() => {
     preloadAudio();
   }, []);
 
   useEffect(() => {
-    if (mode === "home") {
-      startMusic("home");
-      return;
-    }
-
-    if (mode === "game") {
-      startMusic("game");
-      return;
-    }
-
-    stopMusic();
+    startCurrentModeMusic(mode);
   }, [mode]);
 
   useEffect(() => {
@@ -81,8 +85,7 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
         return;
       }
 
-      if (mode === "home") startMusic("home");
-      if (mode === "game") startMusic("game");
+      startCurrentModeMusic(mode);
     };
 
     window.addEventListener(
@@ -102,6 +105,16 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
 
+      /*
+       * Important:
+       * Unlock audio and try to start music on EVERY user gesture.
+       * Do this before checking data-sound-muted, because muted controls
+       * should skip click SFX, not block browser audio unlocking.
+       */
+      void unlockExternalAudio().then(() => {
+        startCurrentModeMusic(mode);
+      });
+
       if (!(target instanceof HTMLElement)) return;
 
       const control = target.closest<HTMLElement>(
@@ -116,11 +129,6 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
         return;
       }
 
-      void unlockExternalAudio().then(() => {
-        if (mode === "home") startMusic("home");
-        if (mode === "game") startMusic("game");
-      });
-
       if (isSoundEnabled()) {
         playGameSound(inferSoundFromControl(control));
       }
@@ -132,8 +140,7 @@ export default function SoundBridge({ mode }: SoundBridgeProps) {
         return;
       }
 
-      if (mode === "home") startMusic("home");
-      if (mode === "game") startMusic("game");
+      startCurrentModeMusic(mode);
     };
 
     document.addEventListener("pointerdown", handlePointerDown, {
